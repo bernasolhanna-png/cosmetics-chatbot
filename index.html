@@ -65,7 +65,6 @@
     pointer-events: none;
   }
 
-  /* Floating decorative circles */
   .deco {
     position: fixed; border-radius: 50%; pointer-events: none;
     animation: float 8s ease-in-out infinite;
@@ -76,7 +75,6 @@
   .deco-4 { width:6px;height:6px; background:var(--pink-400); opacity:.4; top:20%; right:6%; animation-delay:1s; }
   @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
 
-  /* App shell */
   #app {
     width: 100%; max-width: 820px;
     background: var(--glass);
@@ -91,7 +89,6 @@
     position: relative;
   }
 
-  /* Header */
   #header {
     background: linear-gradient(135deg, var(--pink-500) 0%, var(--pink-600) 60%, #b5255a 100%);
     padding: 18px 24px;
@@ -119,6 +116,7 @@
   }
   .header-title { font-family: var(--font-display); font-size: 22px; color: #fff; letter-spacing: 0.01em; }
   .header-sub { font-size: 11px; color: rgba(255,255,255,0.75); font-weight: 300; letter-spacing: 0.05em; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
   .status-pill {
     background: rgba(255,255,255,0.2);
     border: 1px solid rgba(255,255,255,0.3);
@@ -134,31 +132,17 @@
     animation: pulse-dot 2s infinite;
   }
   @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-  /* Seed banner */
-  #seed-banner {
-    background: linear-gradient(90deg, #fff0f5, #fce7f3);
-    border-bottom: 1px solid var(--glass-border);
-    padding: 10px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    flex-shrink: 0;
-  }
-  .seed-text { font-size: 13px; color: var(--pink-600); font-weight: 400; }
-  .seed-text strong { font-weight: 500; }
-  #seed-btn {
-    background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
-    color: #fff; border: none; border-radius: 99px;
-    padding: 7px 18px; font-size: 12px; font-weight: 500;
+  .clear-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 11px; color: rgba(255,255,255,0.85);
     cursor: pointer; font-family: var(--font-body);
-    transition: all 0.2s; white-space: nowrap;
-    box-shadow: 0 2px 12px rgba(232,70,143,0.3);
+    transition: all 0.2s;
   }
-  #seed-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(232,70,143,0.4); }
-  #seed-btn:active { transform: translateY(0); }
-  #seed-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-  #seed-status { font-size: 12px; color: var(--pink-500); font-style: italic; margin-left: 8px; }
+  .clear-btn:hover { background: rgba(255,255,255,0.25); }
 
-  /* Messages */
   #messages {
     flex: 1; overflow-y: auto;
     padding: 20px 24px;
@@ -318,18 +302,13 @@
         <div class="header-sub">AI Beauty Advisor</div>
       </div>
     </div>
-    <div class="status-pill">
-      <div class="status-dot"></div>
-      Online
+    <div class="header-right">
+      <button class="clear-btn" onclick="clearChat()">Clear chat</button>
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        Online
+      </div>
     </div>
-  </div>
-
-  <div id="seed-banner">
-    <div>
-      <span class="seed-text"><strong>Firestore dataset</strong> — seed all 19 intents + product catalogue into your database</span>
-      <span id="seed-status"></span>
-    </div>
-    <button id="seed-btn" onclick="seedFirestore()">🌱 Seed Firestore</button>
   </div>
 
   <div id="messages">
@@ -345,6 +324,7 @@
     <div class="chip" onclick="useChip(this)">Best serum for dark spots?</div>
     <div class="chip" onclick="useChip(this)">My hair is frizzy &amp; dry</div>
     <div class="chip" onclick="useChip(this)">Everyday makeup look</div>
+    <div class="chip" onclick="useChip(this)">What ingredients should I avoid?</div>
   </div>
 
   <div id="input-bar">
@@ -381,7 +361,8 @@
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDJoHJbl4JUf8r3eYpefMpSzz_0WJJRQFc",
@@ -395,296 +376,23 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+try { getAnalytics(app); } catch(e) {}
+
 window._db = db;
+window._col = collection;
+window._addDoc = addDoc;
+window._serverTimestamp = serverTimestamp;
 window._firestoreReady = true;
-
-// ─────────────────────────────────────────────
-// FULL SEED DATASET
-// ─────────────────────────────────────────────
-const INTENTS = [
-  {
-    id: "skin_type_identification",
-    category: "skincare",
-    intent: "Skin Type Identification",
-    description: "User wants to identify their skin type.",
-    utterances: ["What's my skin type?", "How do I know if I have oily skin?", "I don't know what type of skin I have.", "How to tell what skin type I am"],
-    response: "Great question! Here's a quick guide: Oily — shiny face, large pores, makeup slides off. Dry — tight, rough or flaky skin. Combination — oily T-zone, normal/dry cheeks. Sensitive — easily red or reactive. Normal — balanced, rarely breaks out. Which sounds most like you? I can recommend a routine right away! 😊",
-    tags: ["skin type", "oily", "dry", "combination", "sensitive", "normal"]
-  },
-  {
-    id: "skincare_routine_recommendation",
-    category: "skincare",
-    intent: "Skincare Routine Recommendation",
-    description: "User wants a personalized skincare routine.",
-    utterances: ["Can you give me a skincare routine?", "What should I put on my face in the morning?", "Build me a nighttime skincare routine.", "What is a good daily skincare routine?"],
-    response: "Here's a simple morning routine for all skin types: 1) Cleanser — gentle, suited to your skin type. 2) Toner — balances pH. 3) Serum — Vitamin C to brighten. 4) Moisturizer — lightweight or rich depending on your skin. 5) Sunscreen — SPF 30+ always! Consistency is key — you'll see results in a few weeks! 💕",
-    tags: ["routine", "morning", "night", "steps", "skincare"]
-  },
-  {
-    id: "skincare_product_recommendation",
-    category: "skincare",
-    intent: "Skincare Product Recommendation",
-    description: "User wants product suggestions for skincare.",
-    utterances: ["What moisturizer should I use?", "Recommend me a good serum.", "What's a good sunscreen for oily skin?", "Best toner for sensitive skin?"],
-    response: "For dark spots, look for serums with: Vitamin C (brightens), Niacinamide (evens tone), Alpha Arbutin (targets stubborn spots), or Tranexamic Acid (great for melasma). Apply after toning and always follow with SPF! 🌟",
-    tags: ["product", "serum", "moisturizer", "sunscreen", "recommendation"]
-  },
-  {
-    id: "skincare_ingredient_inquiry",
-    category: "skincare",
-    intent: "Skincare Ingredient Inquiry",
-    description: "User wants to know about a specific skincare ingredient.",
-    utterances: ["What does niacinamide do?", "Is retinol safe for sensitive skin?", "What is hyaluronic acid used for?", "Explain glycolic acid"],
-    response: "Retinol is one of the most powerful ingredients! It speeds up cell turnover, reduces fine lines, fades dark spots, and unclogs pores. Start low (0.025–0.1%), use at night only, follow with moisturizer, and wear SPF every morning since retinol increases sun sensitivity. ☀️",
-    tags: ["ingredients", "retinol", "niacinamide", "hyaluronic acid", "AHA", "BHA"]
-  },
-  {
-    id: "skin_concern_troubleshooting",
-    category: "skincare",
-    intent: "Skin Concern Troubleshooting",
-    description: "User wants help with a specific skin problem.",
-    utterances: ["I keep breaking out on my chin.", "My skin is always so dry and flaky.", "How do I get rid of dark spots?", "Why is my skin so dull?"],
-    response: "Chin/jawline breakouts are usually hormonal or stress-related. Try: salicylic acid cleanser, spot treatment with benzoyl peroxide or tea tree oil, avoid touching your face, change pillowcase twice a week, and reduce dairy/sugar. If breakouts persist, see a dermatologist. 💙",
-    tags: ["acne", "breakouts", "dry skin", "dark spots", "concerns"]
-  },
-  {
-    id: "ingredient_compatibility_check",
-    category: "skincare",
-    intent: "Ingredient Compatibility Check",
-    description: "User wants to know if ingredients can be used together.",
-    utterances: ["Can I use Vitamin C and retinol together?", "Is it okay to mix niacinamide with AHA?", "What ingredients should I not mix?", "Can I layer hyaluronic acid with retinol?"],
-    response: "Vitamin C + Niacinamide — great combo! 🙌 Vitamin C brightens and fights free radicals; niacinamide minimizes pores and controls oil. Pro tip: if your Vit C is 15%+, apply first and let it absorb fully before niacinamide. You'll get the full benefits of both! ✨",
-    tags: ["mixing", "layering", "compatibility", "vitamin c", "niacinamide", "retinol"]
-  },
-  {
-    id: "makeup_product_recommendation",
-    category: "makeup",
-    intent: "Makeup Product Recommendation",
-    description: "User wants product suggestions for makeup.",
-    utterances: ["What's a good foundation for oily skin?", "Recommend me a long-lasting lipstick.", "What blush should I use for a natural look?", "Best mascara for volume?"],
-    response: "For oily skin, look for oil-free, water-based or matte foundations. Key labels: non-comedogenic, long-wear, shine-control. Ingredients to look for: silica or kaolin clay to absorb oil. Pair with a mattifying primer and setting powder for an all-day shine-free finish! 💄",
-    tags: ["foundation", "lipstick", "blush", "mascara", "oily skin", "makeup"]
-  },
-  {
-    id: "makeup_application_tips",
-    category: "makeup",
-    intent: "Makeup Application Tips",
-    description: "User wants tips on how to apply makeup.",
-    utterances: ["How do I apply foundation properly?", "Tips for a natural everyday makeup look.", "How do I make my eyeshadow look blended?", "How to contour for beginners?"],
-    response: "For natural foundation: Prep skin — moisturize and let it absorb. Use less product and build up. Apply with a damp beauty sponge. Blend into the neck. Set lightly with translucent powder on oily areas only. Less is always more for a natural look! 🌸",
-    tags: ["application", "foundation", "blending", "eyeshadow", "tips"]
-  },
-  {
-    id: "makeup_look_suggestion",
-    category: "makeup",
-    intent: "Makeup Look Suggestion",
-    description: "User wants inspiration or suggestions for a makeup look.",
-    utterances: ["What makeup look suits a round face?", "Give me ideas for a date night makeup look.", "What's a good look for office makeup?", "Simple glam look for beginners"],
-    response: "For everyday makeup: Tinted moisturizer for an effortless base → concealer where needed → cream blush in soft pink/peach → mascara to open eyes → tinted lip balm or gloss. This takes under 10 minutes and works for school, work, or errands! ✨",
-    tags: ["look", "everyday", "date night", "glam", "natural", "office"]
-  },
-  {
-    id: "makeup_removal",
-    category: "makeup",
-    intent: "Makeup Removal",
-    description: "User wants advice on removing makeup properly.",
-    utterances: ["How do I remove makeup properly?", "Best way to remove waterproof mascara", "Is micellar water enough to remove makeup?", "Can I sleep with makeup on?"],
-    response: "Never sleep in your makeup! Double cleansing is best: Step 1 — oil-based cleanser or micellar water to dissolve makeup. Step 2 — gentle foaming or gel cleanser to deep clean. For waterproof mascara, use a dedicated eye makeup remover. Always be gentle — no harsh rubbing! 💧",
-    tags: ["removal", "cleansing", "double cleanse", "micellar", "mascara"]
-  },
-  {
-    id: "hair_type_identification",
-    category: "haircare",
-    intent: "Hair Type Identification",
-    description: "User wants to identify their hair type.",
-    utterances: ["How do I know my hair type?", "Is my hair wavy or curly?", "What does 4C hair mean?", "How to tell if I have fine or thick hair?"],
-    response: "Hair types go from 1 (straight) to 4 (coily): Type 1 — straight, usually oily. Type 2 — wavy (A/B/C waves). Type 3 — curly (loose to tight spirals). Type 4 — coily/kinky. For thickness: fine strands feel like thread, medium feel like regular thread, coarse feel like a string. Which sounds like you? 😊",
-    tags: ["hair type", "curly", "wavy", "straight", "coily", "4C"]
-  },
-  {
-    id: "hair_styling_tips",
-    category: "haircare",
-    intent: "Hair Styling Tips",
-    description: "User wants tips on styling their hair.",
-    utterances: ["How do I get beachy waves?", "Tips for a sleek straight blowout", "How to style curly hair without frizz?", "Easy updos for long hair"],
-    response: "For defined curls without frizz: Apply leave-in conditioner to damp hair → scrunch in curl cream → diffuse on low heat or air dry → once dry, break the cast by scrunching upward. The key is not touching your hair while it dries! 🌀",
-    tags: ["styling", "curls", "waves", "blowout", "updo"]
-  },
-  {
-    id: "hair_product_recommendation",
-    category: "haircare",
-    intent: "Hair Product Recommendation",
-    description: "User wants product suggestions for hair.",
-    utterances: ["What shampoo is good for oily hair?", "Recommend a good hair mask for dry hair.", "What's a good leave-in conditioner for curly hair?", "Best heat protectant spray?"],
-    response: "For oily hair, look for clarifying or balancing shampoos. Key ingredients: tea tree oil, salicylic acid, or zinc pyrithione. Avoid heavy moisturizing or keratin shampoos. Focus shampoo on your scalp and wash every 1–2 days. Avoid over-washing — it can trigger more oil production! 🧴",
-    tags: ["shampoo", "conditioner", "hair mask", "leave-in", "heat protectant"]
-  },
-  {
-    id: "scalp_care_advice",
-    category: "haircare",
-    intent: "Scalp Care Advice",
-    description: "User wants advice on scalp health.",
-    utterances: ["My scalp is really itchy and flaky.", "How do I get rid of dandruff?", "My scalp is oily but my hair ends are dry.", "Best scalp treatment for hair growth?"],
-    response: "Dandruff is super common! Use anti-dandruff shampoo with zinc pyrithione, selenium sulfide, or ketoconazole 2–3x a week. Massage gently to loosen flakes, don't scratch, and keep scalp hydrated with a lightweight scalp oil. If severe, see a dermatologist. 🌱",
-    tags: ["dandruff", "scalp", "itchy", "flaky", "oily scalp", "growth"]
-  },
-  {
-    id: "hair_damage_treatment",
-    category: "haircare",
-    intent: "Hair Damage & Treatment",
-    description: "User wants help with damaged hair.",
-    utterances: ["My hair is so damaged from bleaching.", "How do I repair heat-damaged hair?", "My hair keeps breaking — what do I do?", "How to recover from over-processing?"],
-    response: "For heat damage recovery: Take a break from heat tools → deep condition weekly with protein-rich mask → trim split ends (they can't be repaired) → use bond-repairing treatments with hydrolyzed keratin → be gentle: microfiber towel, loose styles. Recovery takes time but your hair will bounce back! 💪",
-    tags: ["damage", "heat damage", "bleach", "breakage", "protein treatment"]
-  },
-  {
-    id: "beauty_myth_busting",
-    category: "general",
-    intent: "Beauty Myth Busting",
-    description: "User asks about common beauty myths.",
-    utterances: ["Does drinking water clear your skin?", "Is natural skincare always better?", "Does trimming hair make it grow faster?", "Is expensive skincare always better?"],
-    response: "Myth: Trimming hair makes it grow faster. FACT: Hair grows from the scalp — cutting ends has zero effect on growth rate. What trimming DOES do is remove split ends and prevent breakage, making hair look longer and healthier over time. Regular trims are still worth it! ✂️",
-    tags: ["myths", "facts", "hair growth", "natural skincare", "hydration"]
-  },
-  {
-    id: "seasonal_beauty_advice",
-    category: "general",
-    intent: "Seasonal & Environmental Beauty Advice",
-    description: "User wants tips based on weather or environment.",
-    utterances: ["My skin gets so dry in cold weather.", "How do I manage frizzy hair in humid weather?", "What skincare should I use in summer?", "Monsoon skincare tips"],
-    response: "For frizzy hair in humidity: Use anti-frizz serum on damp hair → don't touch hair while it dries → apply leave-in conditioner for moisture → try protective styles on extra humid days → use microfiber towel instead of regular. Frizz = dehydrated hair reaching for moisture in the air! 💧",
-    tags: ["humid", "summer", "winter", "frizz", "seasonal", "dry weather"]
-  },
-  {
-    id: "product_availability_inquiry",
-    category: "general",
-    intent: "Product Availability Inquiry",
-    description: "User asks about where to buy products.",
-    utterances: ["Where can I buy this product?", "Is this available in the Philippines?", "How much does this cost?", "Where to buy affordable skincare in PH?"],
-    response: "In the Philippines, you can find beauty products at: Official brand websites (most authentic), Lazada & Shopee (wide range + deals), BeautyMNL (curated beauty), SM Beauty & Watson's (physical stores), or brand Instagram/Facebook shops. Always buy from authorized sellers for guaranteed authentic products! 🛒",
-    tags: ["buy", "Philippines", "Lazada", "Shopee", "BeautyMNL", "price", "where to buy"]
-  },
-  {
-    id: "human_escalation",
-    category: "general",
-    intent: "Human Agent Escalation",
-    description: "User's concern requires a human specialist.",
-    utterances: ["I want to talk to a real person.", "I'm having a bad allergic reaction.", "This isn't answering my question.", "Connect me to a beauty specialist"],
-    response: "Of course! I completely understand. 🙏 Let me connect you with one of our beauty specialists right away who can assist you personally. Connecting you to a live agent now — please hold on for just a moment!",
-    tags: ["escalation", "human agent", "live chat", "allergic reaction", "specialist"]
-  }
-];
-
-const PRODUCTS = [
-  { id: "p001", name: "Glow Vitamin C Brightening Serum", category: "skincare", subcategory: "serum", skinType: ["all", "dull", "normal"], concerns: ["dark spots", "dullness", "uneven tone"], keyIngredients: ["Vitamin C 15%", "Niacinamide", "Ferulic Acid"], price: 899, currency: "PHP", inStock: true, rating: 4.7, tags: ["brightening", "antioxidant", "AM serum"] },
-  { id: "p002", name: "Hydra-Plump Hyaluronic Moisturizer", category: "skincare", subcategory: "moisturizer", skinType: ["dry", "normal", "combination"], concerns: ["dehydration", "dryness", "fine lines"], keyIngredients: ["Hyaluronic Acid", "Ceramides", "Squalane"], price: 699, currency: "PHP", inStock: true, rating: 4.8, tags: ["hydrating", "plumping", "lightweight"] },
-  { id: "p003", name: "Clear Skin Salicylic Acid Cleanser", category: "skincare", subcategory: "cleanser", skinType: ["oily", "combination", "acne-prone"], concerns: ["acne", "clogged pores", "excess oil"], keyIngredients: ["Salicylic Acid 2%", "Green Tea Extract", "Zinc"], price: 450, currency: "PHP", inStock: true, rating: 4.5, tags: ["acne", "BHA", "pore-clearing"] },
-  { id: "p004", name: "Calm & Soothe Centella Toner", category: "skincare", subcategory: "toner", skinType: ["sensitive", "dry", "combination"], concerns: ["redness", "irritation", "sensitivity"], keyIngredients: ["Centella Asiatica", "Panthenol", "Allantoin"], price: 550, currency: "PHP", inStock: true, rating: 4.6, tags: ["soothing", "sensitive", "hydrating"] },
-  { id: "p005", name: "SPF 50+ Daily Sunscreen Fluid", category: "skincare", subcategory: "sunscreen", skinType: ["all", "oily", "normal"], concerns: ["sun protection", "aging", "dark spots"], keyIngredients: ["Zinc Oxide", "Niacinamide", "Vitamin E"], price: 649, currency: "PHP", inStock: true, rating: 4.9, tags: ["SPF50", "daily", "lightweight", "non-greasy"] },
-  { id: "p006", name: "Retinol Renewal Night Serum 0.5%", category: "skincare", subcategory: "serum", skinType: ["normal", "combination", "aging"], concerns: ["fine lines", "wrinkles", "texture", "acne scars"], keyIngredients: ["Retinol 0.5%", "Bakuchiol", "Squalane"], price: 1199, currency: "PHP", inStock: true, rating: 4.4, tags: ["retinol", "anti-aging", "PM serum"] },
-  { id: "p007", name: "Matte Perfection Foundation SPF20", category: "makeup", subcategory: "foundation", skinType: ["oily", "combination"], concerns: ["shine", "coverage", "longevity"], finish: "matte", coverage: "medium-full", shadeRange: 20, price: 1299, currency: "PHP", inStock: true, rating: 4.5, tags: ["foundation", "matte", "long-wear", "oily skin"] },
-  { id: "p008", name: "Dewy Glass Skin Foundation", category: "makeup", subcategory: "foundation", skinType: ["dry", "normal"], concerns: ["dullness", "dryness"], finish: "dewy", coverage: "light-medium", shadeRange: 16, price: 1199, currency: "PHP", inStock: true, rating: 4.6, tags: ["foundation", "dewy", "glassy", "dry skin"] },
-  { id: "p009", name: "All-Day Velvet Lip Color", category: "makeup", subcategory: "lipstick", finish: "matte", wearTime: "12hr", shadeCount: 30, price: 399, currency: "PHP", inStock: true, rating: 4.7, tags: ["lipstick", "matte", "long-lasting", "pigmented"] },
-  { id: "p010", name: "Flushed Cream Blush Stick", category: "makeup", subcategory: "blush", finish: "natural-glow", shadeCount: 12, price: 499, currency: "PHP", inStock: true, rating: 4.8, tags: ["blush", "cream", "natural", "buildable"] },
-  { id: "p011", name: "Volume & Curl Mascara", category: "makeup", subcategory: "mascara", finish: "volumizing", waterproof: true, price: 599, currency: "PHP", inStock: true, rating: 4.5, tags: ["mascara", "volume", "curl", "waterproof"] },
-  { id: "p012", name: "Repair & Shine Hair Mask", category: "haircare", subcategory: "mask", hairType: ["dry", "damaged", "chemically-treated"], concerns: ["damage", "breakage", "dryness"], keyIngredients: ["Hydrolyzed Keratin", "Argan Oil", "Amino Acids"], price: 799, currency: "PHP", inStock: true, rating: 4.7, tags: ["mask", "repair", "damaged hair", "weekly"] },
-  { id: "p013", name: "Curl Define Leave-In Cream", category: "haircare", subcategory: "leave-in", hairType: ["curly", "wavy", "coily"], concerns: ["frizz", "definition", "dryness"], keyIngredients: ["Shea Butter", "Flaxseed Extract", "Panthenol"], price: 649, currency: "PHP", inStock: true, rating: 4.6, tags: ["curly hair", "define", "frizz control", "leave-in"] },
-  { id: "p014", name: "Scalp Balancing Anti-Dandruff Shampoo", category: "haircare", subcategory: "shampoo", hairType: ["oily scalp", "dandruff-prone"], concerns: ["dandruff", "itchy scalp", "excess sebum"], keyIngredients: ["Zinc Pyrithione", "Tea Tree Oil", "Salicylic Acid"], price: 549, currency: "PHP", inStock: true, rating: 4.4, tags: ["dandruff", "scalp", "clarifying", "oily hair"] },
-  { id: "p015", name: "Thermal Heat Protectant Spray", category: "haircare", subcategory: "styling", hairType: ["all"], concerns: ["heat damage", "breakage", "dryness"], keyIngredients: ["Quinoa Protein", "Argan Oil", "UV Filters"], price: 449, currency: "PHP", inStock: true, rating: 4.5, tags: ["heat protection", "styling", "all hair types"] }
-];
-
-const SKIN_TYPES = [
-  { id: "oily", label: "Oily Skin", description: "Excess sebum, shiny appearance, enlarged pores", recommendedIngredients: ["Niacinamide", "Salicylic Acid", "Zinc", "Kaolin Clay"], avoidIngredients: ["Coconut Oil", "Heavy oils", "Petrolatum"], routineSteps: ["Gel cleanser", "BHA toner", "Niacinamide serum", "Oil-free moisturizer", "Matte SPF"] },
-  { id: "dry", label: "Dry Skin", description: "Lacks moisture, feels tight and rough, may flake", recommendedIngredients: ["Hyaluronic Acid", "Ceramides", "Squalane", "Glycerin", "Shea Butter"], avoidIngredients: ["Alcohol-based toners", "Harsh cleansers", "Over-exfoliation"], routineSteps: ["Cream cleanser", "Hydrating toner", "Hyaluronic serum", "Rich moisturizer", "SPF with hydrating base"] },
-  { id: "combination", label: "Combination Skin", description: "Oily T-zone with normal or dry cheeks", recommendedIngredients: ["Niacinamide", "Hyaluronic Acid", "BHA for T-zone", "Light moisturizers"], avoidIngredients: ["Heavy creams on T-zone", "Stripping cleansers"], routineSteps: ["Gentle foaming cleanser", "Balancing toner", "Lightweight serum", "Gel moisturizer", "SPF"] },
-  { id: "sensitive", label: "Sensitive Skin", description: "Easily irritated, prone to redness and reactions", recommendedIngredients: ["Centella Asiatica", "Allantoin", "Panthenol", "Azelaic Acid"], avoidIngredients: ["Fragrance", "Alcohol", "High % AHA/BHA", "Essential oils"], routineSteps: ["Gentle fragrance-free cleanser", "Soothing toner", "Barrier serum", "Calming moisturizer", "Mineral SPF"] },
-  { id: "normal", label: "Normal Skin", description: "Balanced, rarely breaks out, comfortable", recommendedIngredients: ["Vitamin C", "Retinol", "AHA", "Peptides"], avoidIngredients: [], routineSteps: ["Any gentle cleanser", "Toner", "Antioxidant serum", "Moisturizer", "SPF"] }
-];
-
-const INGREDIENTS = [
-  { id: "niacinamide", name: "Niacinamide", aka: ["Vitamin B3"], benefits: ["Minimizes pores", "Controls oil", "Brightens", "Reduces redness", "Strengthens barrier"], bestFor: ["oily", "combination", "sensitive"], concentration: "2-10%", usageTime: "AM/PM", compatibleWith: ["Hyaluronic Acid", "SPF", "Retinol", "AHA", "Vitamin C"], incompatibleWith: [] },
-  { id: "vitamin_c", name: "Vitamin C", aka: ["Ascorbic Acid", "L-Ascorbic Acid"], benefits: ["Brightens skin", "Fades dark spots", "Antioxidant protection", "Boosts collagen"], bestFor: ["dull", "uneven tone", "aging"], concentration: "10-20%", usageTime: "AM", compatibleWith: ["SPF", "Vitamin E", "Ferulic Acid", "Niacinamide (apply first)"], incompatibleWith: ["Benzoyl Peroxide (same time)"] },
-  { id: "retinol", name: "Retinol", aka: ["Vitamin A", "Retinoid"], benefits: ["Speeds cell turnover", "Reduces wrinkles", "Fades acne scars", "Unclogs pores"], bestFor: ["aging", "acne", "dull skin"], concentration: "0.025-1%", usageTime: "PM only", compatibleWith: ["Hyaluronic Acid", "Ceramides", "SPF (AM)"], incompatibleWith: ["Vitamin C (same time)", "AHA/BHA (same time)", "Benzoyl Peroxide"] },
-  { id: "hyaluronic_acid", name: "Hyaluronic Acid", aka: ["HA", "Sodium Hyaluronate"], benefits: ["Deep hydration", "Plumps skin", "Reduces fine lines", "Holds 1000x its weight in water"], bestFor: ["dry", "dehydrated", "all skin types"], concentration: "0.1-2%", usageTime: "AM/PM", compatibleWith: ["All actives", "Best applied on damp skin"], incompatibleWith: [] },
-  { id: "salicylic_acid", name: "Salicylic Acid", aka: ["BHA", "Beta Hydroxy Acid"], benefits: ["Unclogs pores", "Reduces acne", "Exfoliates inside pore", "Anti-inflammatory"], bestFor: ["oily", "acne-prone", "combination"], concentration: "0.5-2%", usageTime: "PM or AM", compatibleWith: ["Niacinamide", "Hyaluronic Acid"], incompatibleWith: ["Retinol (same step)", "Vitamin C (same step)"] }
-];
-
-window.seedFirestore = async function() {
-  if (!window._firestoreReady) { alert("Firebase not ready yet, please wait."); return; }
-  const btn = document.getElementById("seed-btn");
-  const status = document.getElementById("seed-status");
-  btn.disabled = true;
-  btn.textContent = "Seeding...";
-  status.textContent = "";
-
-  try {
-    const { collection, doc, setDoc, writeBatch } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-    const db = window._db;
-    let count = 0;
-
-    // Seed intents
-    status.textContent = "Writing intents...";
-    let batch = writeBatch(db);
-    INTENTS.forEach(intent => {
-      const ref = doc(collection(db, "intents"), intent.id);
-      batch.set(ref, { ...intent, createdAt: new Date().toISOString() });
-      count++;
-    });
-    await batch.commit();
-
-    // Seed products
-    status.textContent = "Writing products...";
-    batch = writeBatch(db);
-    PRODUCTS.forEach(product => {
-      const ref = doc(collection(db, "products"), product.id);
-      batch.set(ref, { ...product, createdAt: new Date().toISOString() });
-      count++;
-    });
-    await batch.commit();
-
-    // Seed skin types
-    status.textContent = "Writing skin types...";
-    batch = writeBatch(db);
-    SKIN_TYPES.forEach(st => {
-      const ref = doc(collection(db, "skinTypes"), st.id);
-      batch.set(ref, { ...st, createdAt: new Date().toISOString() });
-      count++;
-    });
-    await batch.commit();
-
-    // Seed ingredients
-    status.textContent = "Writing ingredients...";
-    batch = writeBatch(db);
-    INGREDIENTS.forEach(ing => {
-      const ref = doc(collection(db, "ingredients"), ing.id);
-      batch.set(ref, { ...ing, createdAt: new Date().toISOString() });
-      count++;
-    });
-    await batch.commit();
-
-    btn.textContent = "✓ Seeded!";
-    btn.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
-    status.textContent = `${count} documents written to Firestore ✓`;
-    status.style.color = "#16a34a";
-    showToast(`🌱 ${count} documents seeded to Firestore!`);
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = "🌱 Seed Firestore";
-    status.textContent = "Error: " + e.message;
-    status.style.color = "#e11d48";
-    showToast("Seed failed: " + e.message);
-    console.error(e);
-  }
-};
 </script>
 
-<!-- Chat logic with Groq API -->
+<!-- Chat Logic -->
 <script>
 const GROQ_API_KEY = "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";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
-const chatHistory = [];
+let chatHistory = [];
 const profile = { skin: null, concerns: [], hair: null, focus: null };
 let busy = false;
+let sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 const SYSTEM = `You are Glow, a warm and smart AI beauty advisor for a cosmetics app in the Philippines. You are NOT a FAQ bot — you are a knowledgeable best friend who works at a high-end beauty counter.
 
@@ -781,6 +489,32 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3200);
 }
 
+function clearChat() {
+  chatHistory = [];
+  profile.skin = null; profile.concerns = []; profile.hair = null; profile.focus = null;
+  sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const wrap = document.getElementById('messages');
+  wrap.innerHTML = `<div class="msg bot"><div class="msg-avatar">🌸</div><div class="bubble">Hi gorgeous! I'm Glow, your personal AI beauty advisor. ✨ Tell me about your skin or hair — I'll remember everything and tailor every recommendation just for you. What beauty question is on your mind?</div></div>`;
+  document.getElementById('p-skin').textContent = '—'; document.getElementById('p-skin').classList.add('empty');
+  document.getElementById('p-concerns').innerHTML = '<span class="ptag empty">—</span>';
+  document.getElementById('p-hair').textContent = '—'; document.getElementById('p-hair').classList.add('empty');
+  document.getElementById('p-focus').textContent = '—'; document.getElementById('p-focus').classList.add('empty');
+}
+
+async function logToFirestore(userMsg, botReply) {
+  if (!window._firestoreReady) return;
+  try {
+    await window._addDoc(window._col(window._db, 'chatHistory'), {
+      sessionId,
+      role: 'exchange',
+      userMessage: userMsg,
+      botReply: botReply,
+      profile: { ...profile },
+      timestamp: window._serverTimestamp()
+    });
+  } catch(e) { /* silent fail */ }
+}
+
 async function sendMessage() {
   if (busy) return;
   const inp = document.getElementById('user-input');
@@ -817,6 +551,7 @@ async function sendMessage() {
     chatHistory.push({ role: 'assistant', content: raw });
     removeTyping();
     appendMsg('bot', clean);
+    logToFirestore(text, clean);
   } catch(e) {
     removeTyping();
     appendMsg('bot', "Oops, something went wrong! Check your connection and try again. 🌸");
