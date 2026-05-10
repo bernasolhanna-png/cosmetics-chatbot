@@ -1,564 +1,617 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Glow — AI Beauty Advisor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --pink-50: #fff0f5;
-    --pink-100: #ffd6e7;
-    --pink-200: #ffadd2;
-    --pink-300: #ff85bf;
-    --pink-400: #f760a8;
-    --pink-500: #e8468f;
-    --pink-600: #c4306f;
-    --pink-700: #9e1f52;
-    --rose: #f43f5e;
-    --blush: #fda4af;
-    --cream: #fff8f9;
-    --glass: rgba(255,255,255,0.7);
-    --glass-border: rgba(255,182,213,0.35);
-    --shadow-pink: 0 4px 32px rgba(232,70,143,0.12);
-    --shadow-deep: 0 8px 48px rgba(156,26,84,0.18);
-    --radius-sm: 12px;
-    --radius-md: 18px;
-    --radius-lg: 28px;
-    --radius-xl: 40px;
-    --font-display: 'Playfair Display', Georgia, serif;
-    --font-body: 'DM Sans', sans-serif;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glam AI — Your Beauty Companion</title>
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
-  body {
-    font-family: var(--font-body);
-    background: linear-gradient(135deg, #fff0f5 0%, #fce7f3 40%, #fdf2f8 70%, #fff5f7 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-  }
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJoHJbl4JUf8r3eYpefMpSzz_0WJJRQFc",
+      authDomain: "cosmeticschatbot.firebaseapp.com",
+      projectId: "cosmeticschatbot",
+      storageBucket: "cosmeticschatbot.firebasestorage.app",
+      messagingSenderId: "531598945053",
+      appId: "1:531598945053:web:299e2347a54aa6f55fcff4",
+      measurementId: "G-4BZZD7W7X0"
+    };
 
-  body::before {
-    content: '';
-    position: fixed;
-    top: -200px; right: -200px;
-    width: 600px; height: 600px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,182,213,0.25) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: -150px; left: -150px;
-    width: 500px; height: 500px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(244,63,94,0.1) 0%, transparent 70%);
-    pointer-events: none;
-  }
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getFirestore(app);
 
-  .deco {
-    position: fixed; border-radius: 50%; pointer-events: none;
-    animation: float 8s ease-in-out infinite;
-  }
-  .deco-1 { width:12px;height:12px; background:var(--pink-300); opacity:.35; top:15%; left:8%; animation-delay:0s; }
-  .deco-2 { width:8px;height:8px; background:var(--rose); opacity:.25; top:70%; right:12%; animation-delay:2s; }
-  .deco-3 { width:16px;height:16px; background:var(--blush); opacity:.3; top:40%; left:3%; animation-delay:4s; }
-  .deco-4 { width:6px;height:6px; background:var(--pink-400); opacity:.4; top:20%; right:6%; animation-delay:1s; }
-  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    window.__db = db;
+    window.__fbReady = true;
+    window.__addDoc = addDoc;
+    window.__collection = collection;
+    window.__getDocs = getDocs;
+    window.__query = query;
+    window.__orderBy = orderBy;
+    window.__serverTimestamp = serverTimestamp;
+    window.dispatchEvent(new Event("firebase-ready"));
+  </script>
 
-  #app {
-    width: 100%; max-width: 820px;
-    background: var(--glass);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-deep), inset 0 1px 0 rgba(255,255,255,0.8);
-    display: flex;
-    flex-direction: column;
-    height: 680px;
-    overflow: hidden;
-    position: relative;
-  }
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
-  #header {
-    background: linear-gradient(135deg, var(--pink-500) 0%, var(--pink-600) 60%, #b5255a 100%);
-    padding: 18px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: relative;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  #header::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-    pointer-events: none;
-  }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .logo-ring {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    border: 2px solid rgba(255,255,255,0.4);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 0 0 4px rgba(255,255,255,0.1);
-  }
-  .header-title { font-family: var(--font-display); font-size: 22px; color: #fff; letter-spacing: 0.01em; }
-  .header-sub { font-size: 11px; color: rgba(255,255,255,0.75); font-weight: 300; letter-spacing: 0.05em; text-transform: uppercase; }
-  .header-right { display: flex; align-items: center; gap: 10px; }
-  .status-pill {
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 99px;
-    padding: 5px 12px;
-    font-size: 12px; color: #fff; font-weight: 400;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .status-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #86efac;
-    box-shadow: 0 0 6px #86efac;
-    animation: pulse-dot 2s infinite;
-  }
-  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.5} }
-  .clear-btn {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 99px;
-    padding: 5px 12px;
-    font-size: 11px; color: rgba(255,255,255,0.85);
-    cursor: pointer; font-family: var(--font-body);
-    transition: all 0.2s;
-  }
-  .clear-btn:hover { background: rgba(255,255,255,0.25); }
+  <style>
+    :root {
+      --pink-deep:   #e8507a;
+      --pink-mid:    #f472a0;
+      --pink-light:  #fce8f0;
+      --pink-pale:   #fff5f8;
+      --white:       #ffffff;
+      --text-dark:   #2a1520;
+      --text-mid:    #7a4a5e;
+      --text-light:  #b08090;
+      --border:      #f0d0dc;
+      --shadow:      0 4px 30px rgba(232, 80, 122, 0.10);
+      --radius:      18px;
+    }
 
-  #messages {
-    flex: 1; overflow-y: auto;
-    padding: 20px 24px;
-    display: flex; flex-direction: column; gap: 14px;
-    scroll-behavior: smooth;
-  }
-  #messages::-webkit-scrollbar { width: 4px; }
-  #messages::-webkit-scrollbar-track { background: transparent; }
-  #messages::-webkit-scrollbar-thumb { background: var(--pink-200); border-radius: 99px; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .msg { display: flex; gap: 10px; align-items: flex-end; max-width: 78%; animation: msgIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
-  @keyframes msgIn { from{opacity:0;transform:translateY(8px) scale(0.97)} to{opacity:1;transform:none} }
-  .msg.bot { align-self: flex-start; }
-  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--text-dark);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-  .msg-avatar {
-    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; font-size: 15px;
-    border: 1.5px solid var(--glass-border);
-  }
-  .msg.bot .msg-avatar { background: linear-gradient(135deg, var(--pink-100), var(--pink-200)); }
-  .msg.user .msg-avatar { background: linear-gradient(135deg, var(--pink-400), var(--pink-500)); }
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 28px;
+      border-bottom: 1.5px solid var(--border);
+      background: var(--white);
+      position: relative;
+      z-index: 10;
+    }
 
-  .bubble {
-    padding: 11px 15px;
-    border-radius: var(--radius-md);
-    font-size: 14px; line-height: 1.6;
-    word-break: break-word;
-  }
-  .msg.bot .bubble {
-    background: rgba(255,255,255,0.82);
-    border: 1px solid rgba(255,182,213,0.3);
-    color: #3d1a2e;
-    border-bottom-left-radius: 5px;
-    box-shadow: 0 2px 12px rgba(232,70,143,0.07);
-  }
-  .msg.user .bubble {
-    background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
-    color: #fff;
-    border-bottom-right-radius: 5px;
-    box-shadow: 0 3px 16px rgba(196,48,111,0.3);
-  }
+    .logo-wrap {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 14px rgba(232,80,122,.30);
+    }
 
-  /* Typing indicator */
-  .typing-bubble { display: flex; gap: 5px; align-items: center; padding: 14px 16px; }
-  .t-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--pink-300);
-    animation: tdot 1.3s infinite ease-in-out;
-  }
-  .t-dot:nth-child(2) { animation-delay: .2s; background: var(--pink-400); }
-  .t-dot:nth-child(3) { animation-delay: .4s; background: var(--pink-500); }
-  @keyframes tdot { 0%,80%,100%{transform:scale(0.7);opacity:0.4} 40%{transform:scale(1.1);opacity:1} }
+    .header-text h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 600;
+      color: var(--pink-deep);
+      letter-spacing: .5px;
+    }
 
-  /* Quick chips */
-  #chips-wrap {
-    padding: 0 24px 10px;
-    display: flex; flex-wrap: wrap; gap: 7px;
-    flex-shrink: 0;
-  }
-  .chip {
-    background: rgba(255,255,255,0.7);
-    border: 1px solid var(--pink-200);
-    border-radius: 99px;
-    padding: 6px 14px;
-    font-size: 12px; color: var(--pink-600);
-    cursor: pointer; font-family: var(--font-body);
-    transition: all 0.18s; white-space: nowrap;
-  }
-  .chip:hover { background: var(--pink-100); border-color: var(--pink-300); transform: translateY(-1px); }
+    .header-text p {
+      font-size: 11.5px; color: var(--text-light);
+      letter-spacing: .3px; margin-top: 1px;
+    }
 
-  /* Input bar */
-  #input-bar {
-    padding: 12px 20px 18px;
-    display: flex; gap: 10px; align-items: flex-end;
-    border-top: 1px solid var(--glass-border);
-    background: rgba(255,255,255,0.5);
-    flex-shrink: 0;
-  }
-  #user-input {
-    flex: 1;
-    background: rgba(255,255,255,0.85);
-    border: 1.5px solid var(--pink-200);
-    border-radius: var(--radius-lg);
-    padding: 11px 18px;
-    font-size: 14px; font-family: var(--font-body);
-    color: #3d1a2e; resize: none;
-    min-height: 44px; max-height: 110px;
-    line-height: 1.5; transition: border-color 0.2s;
-    outline: none;
-  }
-  #user-input::placeholder { color: #c490a8; }
-  #user-input:focus { border-color: var(--pink-400); box-shadow: 0 0 0 3px rgba(232,70,143,0.1); }
-  #send-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
-    border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 3px 16px rgba(196,48,111,0.35);
-    transition: all 0.2s; flex-shrink: 0;
-  }
-  #send-btn:hover { transform: scale(1.07); box-shadow: 0 5px 22px rgba(196,48,111,0.45); }
-  #send-btn:active { transform: scale(0.96); }
-  #send-btn svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #34d399;
+      margin-left: auto;
+      box-shadow: 0 0 0 3px rgba(52,211,153,.22);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 3px rgba(52,211,153,.22); }
+      50%      { box-shadow: 0 0 0 6px rgba(52,211,153,.08); }
+    }
 
-  /* Profile drawer */
-  #profile-bar {
-    background: linear-gradient(90deg, rgba(255,240,245,0.9), rgba(252,231,243,0.9));
-    border-top: 1px solid var(--glass-border);
-    padding: 10px 24px;
-    display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
-    flex-shrink: 0;
-  }
-  .profile-item { display: flex; align-items: center; gap: 6px; }
-  .profile-label { font-size: 11px; color: #b06a8a; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
-  .profile-val { font-size: 12px; color: #7a1a42; }
-  .ptag {
-    background: var(--pink-100); color: var(--pink-600);
-    border-radius: 99px; padding: 2px 9px; font-size: 11px;
-    border: 1px solid var(--pink-200);
-  }
-  .ptag.empty { color: #c490a8; background: transparent; border-color: transparent; font-style: italic; }
+    /* ── SUGGESTIONS BAR ── */
+    .suggestions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border);
+      background: var(--pink-pale);
+      scrollbar-width: none;
+    }
+    .suggestions::-webkit-scrollbar { display: none; }
 
-  /* Toast */
-  #toast {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    background: linear-gradient(135deg, var(--pink-500), var(--pink-600));
-    color: #fff; padding: 10px 22px; border-radius: 99px;
-    font-size: 13px; font-weight: 400; font-family: var(--font-body);
-    box-shadow: var(--shadow-deep);
-    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 9999;
-    white-space: nowrap;
-  }
-  #toast.show { opacity: 1; }
+    .chip {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--pink-deep);
+      font-size: 12.5px; font-weight: 500;
+      cursor: pointer;
+      transition: all .18s;
+      white-space: nowrap;
+    }
+    .chip:hover {
+      background: var(--pink-deep); color: var(--white);
+      border-color: var(--pink-deep);
+      transform: translateY(-1px);
+    }
 
-  @media (max-width: 600px) {
-    body { padding: 0; }
-    #app { height: 100vh; border-radius: 0; }
-    .msg { max-width: 90%; }
-  }
-</style>
+    /* ── CHAT AREA ── */
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: var(--white);
+      scroll-behavior: smooth;
+    }
+    #chat::-webkit-scrollbar { width: 5px; }
+    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── MESSAGES ── */
+    .msg { display: flex; gap: 12px; max-width: 780px; }
+    .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+    .msg.bot  { align-self: flex-start; }
+
+    .avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+    }
+    .msg.bot  .avatar { background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid)); box-shadow: 0 3px 10px rgba(232,80,122,.28); }
+    .msg.user .avatar { background: var(--pink-light); }
+
+    .bubble {
+      padding: 13px 17px;
+      border-radius: var(--radius);
+      font-size: 14.5px; line-height: 1.65;
+      max-width: 580px;
+    }
+    .msg.bot  .bubble {
+      background: var(--pink-pale);
+      border: 1.5px solid var(--border);
+      border-top-left-radius: 4px;
+      color: var(--text-dark);
+    }
+    .msg.user .bubble {
+      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
+      color: var(--white);
+      border-top-right-radius: 4px;
+      box-shadow: 0 4px 16px rgba(232,80,122,.28);
+    }
+
+    /* markdown-lite inside bubbles */
+    .bubble strong { font-weight: 600; }
+    .bubble em { font-style: italic; }
+    .bubble ul { padding-left: 18px; margin-top: 6px; }
+    .bubble li { margin-bottom: 4px; }
+    .bubble p  { margin-bottom: 6px; }
+    .bubble p:last-child { margin-bottom: 0; }
+
+    /* typing indicator */
+    .typing .bubble {
+      display: flex; align-items: center; gap: 6px;
+      padding: 14px 18px;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink-mid); animation: bounce .9s infinite; }
+    .dot:nth-child(2) { animation-delay: .15s; }
+    .dot:nth-child(3) { animation-delay: .30s; }
+    @keyframes bounce { 0%,60%,100%{ transform:translateY(0);} 30%{ transform:translateY(-6px);} }
+
+    /* timestamp */
+    .ts { font-size: 10.5px; color: var(--text-light); margin-top: 4px; padding: 0 6px; }
+    .msg.user .ts { text-align: right; }
+
+    /* ── INPUT AREA ── */
+    .input-wrap {
+      padding: 16px 20px;
+      border-top: 1.5px solid var(--border);
+      background: var(--white);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    #userInput {
+      flex: 1;
+      min-height: 46px; max-height: 130px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14.5px;
+      color: var(--text-dark);
+      background: var(--pink-pale);
+      resize: none;
+      outline: none;
+      transition: border-color .2s;
+      line-height: 1.5;
+    }
+    #userInput:focus { border-color: var(--pink-mid); background: var(--white); }
+    #userInput::placeholder { color: var(--text-light); }
+
+    #sendBtn {
+      width: 46px; height: 46px;
+      border-radius: 13px;
+      border: none;
+      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(232,80,122,.30);
+      transition: transform .15s, box-shadow .15s;
+      flex-shrink: 0;
+    }
+    #sendBtn:hover  { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(232,80,122,.40); }
+    #sendBtn:active { transform: translateY(0); }
+    #sendBtn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    /* ── WELCOME CARD ── */
+    .welcome {
+      text-align: center;
+      padding: 30px 20px 10px;
+    }
+    .welcome .icon { font-size: 48px; margin-bottom: 14px; }
+    .welcome h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px; font-weight: 600;
+      color: var(--pink-deep);
+      margin-bottom: 8px;
+    }
+    .welcome p { font-size: 14px; color: var(--text-mid); line-height: 1.6; max-width: 420px; margin: 0 auto; }
+
+    /* ── HISTORY PANEL (slide-in) ── */
+    #historyBtn {
+      margin-left: 12px;
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 7px 13px;
+      font-size: 12.5px; color: var(--text-mid);
+      cursor: pointer; transition: all .18s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    #historyBtn:hover { background: var(--pink-light); border-color: var(--pink-mid); color: var(--pink-deep); }
+
+    #historyPanel {
+      position: fixed; top: 0; right: -320px;
+      width: 300px; height: 100%;
+      background: var(--white);
+      border-left: 1.5px solid var(--border);
+      box-shadow: -6px 0 30px rgba(232,80,122,.08);
+      transition: right .3s ease;
+      z-index: 100;
+      display: flex; flex-direction: column;
+    }
+    #historyPanel.open { right: 0; }
+
+    .hp-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .hp-header h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; color: var(--pink-deep);
+    }
+    #closeHistory { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light); }
+
+    #historyList {
+      flex: 1; overflow-y: auto;
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .history-item {
+      padding: 10px 13px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      font-size: 13px; color: var(--text-mid);
+      cursor: pointer;
+      transition: all .18s;
+      line-height: 1.5;
+    }
+    .history-item:hover { background: var(--pink-light); border-color: var(--pink-mid); color: var(--text-dark); }
+    .history-item .hi-role { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-light); margin-bottom: 3px; }
+
+    /* overlay */
+    #overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(42,21,32,.18);
+      z-index: 99;
+    }
+    #overlay.show { display: block; }
+
+    /* scrollbar for history */
+    #historyList::-webkit-scrollbar { width: 4px; }
+    #historyList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      #chat   { padding: 18px 14px; }
+      .bubble { max-width: calc(100vw - 100px); }
+      #historyPanel { width: 260px; }
+    }
+  </style>
 </head>
 <body>
 
-<div class="deco deco-1"></div>
-<div class="deco deco-2"></div>
-<div class="deco deco-3"></div>
-<div class="deco deco-4"></div>
-
-<div id="app">
-
-  <div id="header">
-    <div class="header-left">
-      <div class="logo-ring">🌸</div>
-      <div>
-        <div class="header-title">Glow</div>
-        <div class="header-sub">AI Beauty Advisor</div>
-      </div>
-    </div>
-    <div class="header-right">
-      <button class="clear-btn" onclick="clearChat()">Clear chat</button>
-      <div class="status-pill">
-        <div class="status-dot"></div>
-        Online
-      </div>
-    </div>
+<!-- HEADER -->
+<header>
+  <div class="logo-wrap">💄</div>
+  <div class="header-text">
+    <h1>Glam AI</h1>
+    <p>Your personal beauty &amp; cosmetics advisor</p>
   </div>
+  <div class="status-dot" title="Online"></div>
+  <button id="historyBtn">🕑 History</button>
+</header>
 
-  <div id="messages">
-    <div class="msg bot">
-      <div class="msg-avatar">🌸</div>
-      <div class="bubble">Hi gorgeous! I'm Glow, your personal AI beauty advisor. ✨ Tell me about your skin or hair — I'll remember everything and tailor every recommendation just for you. What beauty question is on your mind?</div>
-    </div>
-  </div>
-
-  <div id="chips-wrap">
-    <div class="chip" onclick="useChip(this)">I have oily skin 🫧</div>
-    <div class="chip" onclick="useChip(this)">Build me a skincare routine</div>
-    <div class="chip" onclick="useChip(this)">Best serum for dark spots?</div>
-    <div class="chip" onclick="useChip(this)">My hair is frizzy &amp; dry</div>
-    <div class="chip" onclick="useChip(this)">Everyday makeup look</div>
-    <div class="chip" onclick="useChip(this)">What ingredients should I avoid?</div>
-  </div>
-
-  <div id="input-bar">
-    <textarea id="user-input" placeholder="Ask Glow anything about beauty..." rows="1"
-      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-    <button id="send-btn" onclick="sendMessage()" aria-label="Send">
-      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    </button>
-  </div>
-
-  <div id="profile-bar">
-    <div class="profile-item">
-      <span class="profile-label">Skin</span>
-      <span class="ptag empty" id="p-skin">—</span>
-    </div>
-    <div class="profile-item">
-      <span class="profile-label">Concerns</span>
-      <span id="p-concerns"><span class="ptag empty">—</span></span>
-    </div>
-    <div class="profile-item">
-      <span class="profile-label">Hair</span>
-      <span class="ptag empty" id="p-hair">—</span>
-    </div>
-    <div class="profile-item">
-      <span class="profile-label">Focus</span>
-      <span class="ptag empty" id="p-focus">—</span>
-    </div>
-  </div>
-
+<!-- QUICK CHIPS -->
+<div class="suggestions">
+  <span class="chip" onclick="quickSend(this)">Best foundation for oily skin?</span>
+  <span class="chip" onclick="quickSend(this)">Skincare routine for beginners</span>
+  <span class="chip" onclick="quickSend(this)">How to do a smoky eye?</span>
+  <span class="chip" onclick="quickSend(this)">Lipstick shades for dark skin</span>
+  <span class="chip" onclick="quickSend(this)">Cruelty-free mascara recs</span>
+  <span class="chip" onclick="quickSend(this)">SPF in makeup – do I need it?</span>
+  <span class="chip" onclick="quickSend(this)">Best blush for fair skin</span>
+  <span class="chip" onclick="quickSend(this)">How to make perfume last longer?</span>
 </div>
 
-<div id="toast"></div>
+<!-- CHAT MESSAGES -->
+<div id="chat">
+  <div class="welcome">
+    <div class="icon">✨</div>
+    <h2>Hello, Beautiful!</h2>
+    <p>Ask me anything about makeup, skincare, haircare, or fragrance. I'm powered by AI and trained on all things beauty.</p>
+  </div>
+</div>
 
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+<!-- INPUT BAR -->
+<div class="input-wrap">
+  <textarea id="userInput" placeholder="Ask about foundation, skincare, lipstick…" rows="1"></textarea>
+  <button id="sendBtn" title="Send">➤</button>
+</div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDJoHJbl4JUf8r3eYpefMpSzz_0WJJRQFc",
-  authDomain: "cosmeticschatbot.firebaseapp.com",
-  projectId: "cosmeticschatbot",
-  storageBucket: "cosmeticschatbot.firebasestorage.app",
-  messagingSenderId: "531598945053",
-  appId: "1:531598945053:web:299e2347a54aa6f55fcff4",
-  measurementId: "G-4BZZD7W7X0"
-};
+<!-- HISTORY PANEL -->
+<div id="overlay"></div>
+<div id="historyPanel">
+  <div class="hp-header">
+    <h3>💬 Chat History</h3>
+    <button id="closeHistory">✕</button>
+  </div>
+  <div id="historyList"><p style="padding:14px;font-size:13px;color:var(--text-light)">No history yet.</p></div>
+</div>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-try { getAnalytics(app); } catch(e) {}
-
-window._db = db;
-window._col = collection;
-window._addDoc = addDoc;
-window._serverTimestamp = serverTimestamp;
-window._firestoreReady = true;
-</script>
-
-<!-- Chat Logic -->
 <script>
+/* ===== CONFIG ===== */
 const GROQ_API_KEY = "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";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
-let chatHistory = [];
-const profile = { skin: null, concerns: [], hair: null, focus: null };
-let busy = false;
-let sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+const GROQ_MODEL   = "llama-3.3-70b-versatile";
+const GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions";
 
-const SYSTEM = `You are Glow, a warm and smart AI beauty advisor for a cosmetics app in the Philippines. You are NOT a FAQ bot — you are a knowledgeable best friend who works at a high-end beauty counter.
+/* ===== COSMETICS KNOWLEDGE BASE (RAG) ===== */
+const KB = [
+  { topic:"foundation", content:"For oily skin choose matte, oil-free foundations (e.g. Fenty Beauty Pro Filt'r, L'Oreal Infallible). For dry skin use hydrating formulas with hyaluronic acid. Always match undertones: cool (pink/blue), warm (yellow/peach), or neutral." },
+  { topic:"skincare", content:"A basic routine: Cleanser → Toner → Serum (Vit C in AM, retinol in PM) → Moisturizer → SPF (AM only). Introduce actives gradually. Patch-test new products. Niacinamide helps pores and oiliness; hyaluronic acid hydrates all skin types." },
+  { topic:"smoky eye", content:"Steps for smoky eye: 1. Prime lids. 2. Apply transition shade to crease. 3. Pack dark shade (black/dark brown) on lid. 4. Blend edges with windshield-wiper motion. 5. Add shimmer to center lid. 6. Smudge lower lash line. 7. Line waterline with black. Apply mascara last." },
+  { topic:"lipstick", content:"Dark skin tones suit rich berries, oxbloods, deep nudes, and bright corals. Medium tones flatter mauve, terracotta, and rose. Fair tones suit pinks, nudes, and classic reds. Always exfoliate and prime lips for longer wear." },
+  { topic:"cruelty-free", content:"Top cruelty-free mascara brands: e.l.f. Cosmetics, Too Faced, Pacifica, Tarte, Urban Decay, Milani. Look for Leaping Bunny or PETA certification logos." },
+  { topic:"SPF makeup", content:"Makeup SPF is supplemental, not sufficient as your only sun protection. Wear a dedicated SPF 30–50 under makeup. Powder SPFs are great for reapplication during the day over makeup." },
+  { topic:"blush", content:"Fair skin: peachy pinks and soft roses. Medium skin: coral, mauve, dusty rose. Olive: terracotta, warm brick. Dark skin: deep berry, warm copper, plum. Apply to apples of cheeks and blend upward toward temples." },
+  { topic:"perfume", content:"To make fragrance last: apply to pulse points (wrists, neck, behind knees) on moisturized skin. Layer with matching body lotion. Don't rub wrists together — it breaks down top notes. Store in cool, dark places away from humidity." },
+  { topic:"concealer", content:"Use concealer one shade lighter than foundation under eyes. For blemishes, match concealer to your skin tone exactly. Banana setting powder sets under-eye concealer and prevents creasing." },
+  { topic:"contouring", content:"Contour with a shade 2–3 deeper than skin along hollows of cheeks, temples, jawline, and sides of nose. Highlight on cheekbones, bridge of nose, brow bone, and Cupid's bow. Blend thoroughly for a natural look." },
+];
 
-PERSONALITY: Friendly, encouraging, slightly playful, uses light beauty emojis naturally. Never robotic.
-
-MEMORY EXTRACTION: When the user tells you something about themselves (skin type, hair type, concerns, preferences, etc.), extract it and include a JSON block at the END of your reply EXACTLY like this:
-|||PROFILE|||{"skin":"oily","concerns":["acne","dark spots"],"hair":"wavy","focus":"skincare"}|||
-Only include fields you learned in THIS message. Omit everything else.
-
-RULES:
-- Keep replies under 110 words unless asked for a full routine
-- Reference the user's profile when you know it (e.g. "Since you have oily skin...")
-- Give ingredient-level advice, not just product categories
-- Always explain WHY behind recommendations
-- For severe reactions or medical concerns, recommend seeing a dermatologist
-- For product availability: mention Lazada, Shopee, BeautyMNL, Watson's, SM Beauty (Philippines)
-- Be direct and genuinely helpful`;
-
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+function retrieveContext(query) {
+  const q = query.toLowerCase();
+  const hits = KB.filter(k => q.includes(k.topic) || k.content.toLowerCase().split(' ').some(w => w.length > 4 && q.includes(w)));
+  if (!hits.length) return "";
+  return "Relevant beauty knowledge:\n" + hits.map(h => `- ${h.content}`).join("\n");
 }
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+/* ===== CONVERSATION HISTORY ===== */
+let messages = [
+  {
+    role: "system",
+    content: `You are Glam AI, an expert beauty and cosmetics advisor. You have deep knowledge of skincare, makeup, haircare, fragrance, and beauty trends. You are warm, encouraging, and knowledgeable — like a friend who happens to be a professional makeup artist and esthetician.
+
+Guidelines:
+- Recommend specific products with brand names when relevant.
+- Tailor advice to the user's skin type, tone, or concern when mentioned.
+- Explain "why" behind beauty tips — educate, don't just list.
+- Be inclusive: address all skin tones, types, genders, and budgets.
+- Use beauty terminology naturally.
+- Keep responses concise but rich. Use bullet points for steps or lists.
+- If a question is unrelated to beauty/cosmetics, politely redirect to beauty topics.`
+  }
+];
+
+/* ===== UI HELPERS ===== */
+const chatEl   = document.getElementById("chat");
+const inputEl  = document.getElementById("userInput");
+const sendBtn  = document.getElementById("sendBtn");
+
+function now() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function useChip(el) {
-  document.getElementById('user-input').value = el.textContent.replace(/[🫧]/g, '').trim();
-  sendMessage();
+function formatMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^## (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<)(.+)$/gm, '<p>$1</p>')
+    .replace(/<p><\/p>/g, '')
+    .replace(/<p>(<ul>)/g, '$1')
+    .replace(/(<\/ul>)<\/p>/g, '$1');
 }
 
-function appendMsg(role, html) {
-  const wrap = document.getElementById('messages');
+function appendMsg(role, html, time) {
   const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  const isBot = role === 'bot';
-  div.innerHTML = `<div class="msg-avatar">${isBot ? '🌸' : '👤'}</div><div class="bubble">${html}</div>`;
-  wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
+  div.className = `msg ${role}`;
+  const avatar = role === 'bot' ? '💄' : '🌸';
+  div.innerHTML = `
+    <div class="avatar">${avatar}</div>
+    <div>
+      <div class="bubble">${html}</div>
+      <div class="ts">${time}</div>
+    </div>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
   return div;
 }
 
 function showTyping() {
-  const wrap = document.getElementById('messages');
   const div = document.createElement('div');
-  div.id = 'typing'; div.className = 'msg bot';
-  div.innerHTML = `<div class="msg-avatar">🌸</div><div class="bubble"><div class="typing-bubble"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div></div>`;
-  wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
+  div.className = 'msg bot typing';
+  div.id = 'typing';
+  div.innerHTML = `<div class="avatar">💄</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-function removeTyping() {
+function hideTyping() {
   const t = document.getElementById('typing');
   if (t) t.remove();
 }
 
-function parseProfile(text) {
-  const start = text.indexOf('|||PROFILE|||');
-  if (start === -1) return text;
-  const jsonStart = start + 13;
-  const end = text.indexOf('|||', jsonStart);
-  if (end === -1) return text;
+/* ===== FIREBASE SAVE ===== */
+async function saveToFirebase(role, text) {
   try {
-    const data = JSON.parse(text.substring(jsonStart, end));
-    if (data.skin) { profile.skin = data.skin; updateProfileUI(); }
-    if (data.concerns?.length) { data.concerns.forEach(c => { if (!profile.concerns.includes(c)) profile.concerns.push(c); }); updateProfileUI(); }
-    if (data.hair) { profile.hair = data.hair; updateProfileUI(); }
-    if (data.focus) { profile.focus = data.focus; updateProfileUI(); }
-  } catch(e) {}
-  return (text.substring(0, start) + text.substring(end + 3)).trim();
-}
-
-function updateProfileUI() {
-  const skinEl = document.getElementById('p-skin');
-  if (profile.skin) { skinEl.textContent = profile.skin; skinEl.classList.remove('empty'); }
-
-  const cEl = document.getElementById('p-concerns');
-  if (profile.concerns.length) {
-    cEl.innerHTML = profile.concerns.map(c => `<span class="ptag">${c}</span>`).join(' ');
-  }
-
-  const hEl = document.getElementById('p-hair');
-  if (profile.hair) { hEl.textContent = profile.hair; hEl.classList.remove('empty'); }
-
-  const fEl = document.getElementById('p-focus');
-  if (profile.focus) { fEl.textContent = profile.focus; fEl.classList.remove('empty'); }
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3200);
-}
-
-function clearChat() {
-  chatHistory = [];
-  profile.skin = null; profile.concerns = []; profile.hair = null; profile.focus = null;
-  sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2);
-  const wrap = document.getElementById('messages');
-  wrap.innerHTML = `<div class="msg bot"><div class="msg-avatar">🌸</div><div class="bubble">Hi gorgeous! I'm Glow, your personal AI beauty advisor. ✨ Tell me about your skin or hair — I'll remember everything and tailor every recommendation just for you. What beauty question is on your mind?</div></div>`;
-  document.getElementById('p-skin').textContent = '—'; document.getElementById('p-skin').classList.add('empty');
-  document.getElementById('p-concerns').innerHTML = '<span class="ptag empty">—</span>';
-  document.getElementById('p-hair').textContent = '—'; document.getElementById('p-hair').classList.add('empty');
-  document.getElementById('p-focus').textContent = '—'; document.getElementById('p-focus').classList.add('empty');
-}
-
-async function logToFirestore(userMsg, botReply) {
-  if (!window._firestoreReady) return;
-  try {
-    await window._addDoc(window._col(window._db, 'chatHistory'), {
-      sessionId,
-      role: 'exchange',
-      userMessage: userMsg,
-      botReply: botReply,
-      profile: { ...profile },
-      timestamp: window._serverTimestamp()
+    if (!window.__fbReady) return;
+    await window.__addDoc(window.__collection(window.__db, "conversations"), {
+      role, text,
+      timestamp: window.__serverTimestamp()
     });
-  } catch(e) { /* silent fail */ }
+  } catch (e) { console.warn("Firebase save error:", e); }
 }
 
-async function sendMessage() {
-  if (busy) return;
-  const inp = document.getElementById('user-input');
-  const text = inp.value.trim();
-  if (!text) return;
-  inp.value = ''; inp.style.height = 'auto';
-  busy = true;
+/* ===== LOAD HISTORY ===== */
+async function loadHistory() {
+  if (!window.__fbReady) { setTimeout(loadHistory, 800); return; }
+  try {
+    const q = window.__query(
+      window.__collection(window.__db, "conversations"),
+      window.__orderBy("timestamp", "desc")
+    );
+    const snap = await window.__getDocs(q);
+    const list = document.getElementById('historyList');
+    if (snap.empty) return;
+    list.innerHTML = '';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const label = d.role === 'user' ? '🌸 You' : '💄 Glam AI';
+      item.innerHTML = `<div class="hi-role">${label}</div>${d.text.substring(0,90)}${d.text.length > 90 ? '…' : ''}`;
+      item.onclick = () => {
+        closeHistory();
+        appendMsg(d.role === 'user' ? 'user' : 'bot', formatMarkdown(d.text), '(history)');
+      };
+      list.appendChild(item);
+    });
+  } catch(e) { console.warn("History load error:", e); }
+}
 
-  appendMsg('user', text);
-  chatHistory.push({ role: 'user', content: text });
+window.addEventListener("firebase-ready", () => setTimeout(loadHistory, 500));
+
+/* ===== SEND MESSAGE ===== */
+async function send(text) {
+  if (!text.trim()) return;
+  inputEl.value = '';
+  inputEl.style.height = '';
+  sendBtn.disabled = true;
+
+  const t = now();
+  appendMsg('user', formatMarkdown(text), t);
+  await saveToFirebase('user', text);
+
+  // RAG context injection
+  const ctx = retrieveContext(text);
+  const augmented = ctx ? `${ctx}\n\nUser question: ${text}` : text;
+
+  messages.push({ role: "user", content: augmented });
+
   showTyping();
 
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
+    const res = await fetch(GROQ_URL, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         model: GROQ_MODEL,
-        max_tokens: 600,
-        temperature: 0.72,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          ...chatHistory
-        ]
+        messages,
+        temperature: 0.75,
+        max_tokens: 900,
+        stream: false
       })
     });
 
+    if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content || "I'm having a moment — please try again! 💕";
-    const clean = parseProfile(raw);
-    chatHistory.push({ role: 'assistant', content: raw });
-    removeTyping();
-    appendMsg('bot', clean);
-    logToFirestore(text, clean);
-  } catch(e) {
-    removeTyping();
-    appendMsg('bot', "Oops, something went wrong! Check your connection and try again. 🌸");
-  }
-  busy = false;
-}
-</script>
+    const reply = data.choices?.[0]?.message?.content?.trim() || "I couldn't fetch a response. Please try again!";
 
+    messages.push({ role: "assistant", content: reply });
+    hideTyping();
+    appendMsg('bot', formatMarkdown(reply), now());
+    await saveToFirebase('assistant', reply);
+
+  } catch(err) {
+    hideTyping();
+    appendMsg('bot', `<em>Oops — couldn't reach the beauty server: ${err.message}</em>`, now());
+    messages.pop();
+  }
+
+  sendBtn.disabled = false;
+}
+
+/* ===== EVENTS ===== */
+sendBtn.onclick = () => send(inputEl.value);
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(inputEl.value); }
+});
+
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 130) + 'px';
+});
+
+function quickSend(el) { send(el.textContent); }
+
+/* ===== HISTORY PANEL ===== */
+const panel   = document.getElementById('historyPanel');
+const overlay = document.getElementById('overlay');
+
+document.getElementById('historyBtn').onclick = () => {
+  panel.classList.add('open');
+  overlay.classList.add('show');
+  loadHistory();
+};
+
+function closeHistory() {
+  panel.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+document.getElementById('closeHistory').onclick = closeHistory;
+overlay.onclick = closeHistory;
+</script>
 </body>
 </html>
