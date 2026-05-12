@@ -8,7 +8,7 @@
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp }
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, deleteDoc, doc }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
@@ -34,6 +34,8 @@
     window.__query = query;
     window.__orderBy = orderBy;
     window.__serverTimestamp = serverTimestamp;
+    window.__deleteDoc = deleteDoc;
+    window.__doc = doc;
     window.dispatchEvent(new Event("firebase-ready"));
   </script>
 
@@ -51,7 +53,6 @@
       --text-mid:    #7a4a5e;
       --text-light:  #b08090;
       --border:      #f0d0dc;
-      --shadow:      0 4px 30px rgba(232, 80, 122, 0.10);
       --radius:      18px;
     }
 
@@ -94,11 +95,7 @@
       color: var(--pink-deep);
       letter-spacing: .5px;
     }
-
-    .header-text p {
-      font-size: 11.5px; color: var(--text-light);
-      letter-spacing: .3px; margin-top: 1px;
-    }
+    .header-text p { font-size: 11.5px; color: var(--text-light); letter-spacing: .3px; margin-top: 1px; }
 
     .status-dot {
       width: 8px; height: 8px; border-radius: 50%;
@@ -112,10 +109,38 @@
       50%      { box-shadow: 0 0 0 6px rgba(52,211,153,.08); }
     }
 
-    /* ── SUGGESTIONS BAR ── */
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .hdr-btn {
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 7px 13px;
+      font-size: 12.5px; color: var(--text-mid);
+      cursor: pointer; transition: all .18s;
+      font-family: 'DM Sans', sans-serif;
+      display: flex; align-items: center; gap: 5px;
+      white-space: nowrap;
+    }
+    .hdr-btn:hover { background: var(--pink-light); border-color: var(--pink-mid); color: var(--pink-deep); }
+
+    /* ── + ADD BUTTON ── */
+    #addKbBtn {
+      width: 38px; height: 38px;
+      border-radius: 11px; border: none;
+      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
+      color: white; font-size: 24px; font-weight: 300;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 12px rgba(232,80,122,.38);
+      transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .18s;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    #addKbBtn:hover { transform: rotate(90deg) scale(1.12); box-shadow: 0 6px 20px rgba(232,80,122,.50); }
+    #addKbBtn:active { transform: scale(.9); }
+
+    /* ── SUGGESTIONS ── */
     .suggestions {
-      display: flex;
-      gap: 8px;
+      display: flex; gap: 8px;
       padding: 12px 24px;
       overflow-x: auto;
       border-bottom: 1px solid var(--border);
@@ -123,73 +148,44 @@
       scrollbar-width: none;
     }
     .suggestions::-webkit-scrollbar { display: none; }
-
     .chip {
-      flex-shrink: 0;
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1.5px solid var(--border);
-      background: var(--white);
-      color: var(--pink-deep);
-      font-size: 12.5px; font-weight: 500;
-      cursor: pointer;
-      transition: all .18s;
-      white-space: nowrap;
+      flex-shrink: 0; padding: 6px 14px;
+      border-radius: 20px; border: 1.5px solid var(--border);
+      background: var(--white); color: var(--pink-deep);
+      font-size: 12.5px; font-weight: 500; cursor: pointer;
+      transition: all .18s; white-space: nowrap;
     }
-    .chip:hover {
-      background: var(--pink-deep); color: var(--white);
-      border-color: var(--pink-deep);
-      transform: translateY(-1px);
-    }
+    .chip:hover { background: var(--pink-deep); color: var(--white); border-color: var(--pink-deep); transform: translateY(-1px); }
+    .chip.custom { border-color: var(--pink-mid); background: var(--pink-light); }
 
-    /* ── CHAT AREA ── */
+    /* ── CHAT ── */
     #chat {
-      flex: 1;
-      overflow-y: auto;
+      flex: 1; overflow-y: auto;
       padding: 28px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      background: var(--white);
-      scroll-behavior: smooth;
+      display: flex; flex-direction: column; gap: 20px;
+      background: var(--white); scroll-behavior: smooth;
     }
     #chat::-webkit-scrollbar { width: 5px; }
     #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* ── MESSAGES ── */
     .msg { display: flex; gap: 12px; max-width: 780px; }
     .msg.user { flex-direction: row-reverse; align-self: flex-end; }
     .msg.bot  { align-self: flex-start; }
 
     .avatar {
-      width: 36px; height: 36px; border-radius: 10px;
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 17px;
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
     }
     .msg.bot  .avatar { background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid)); box-shadow: 0 3px 10px rgba(232,80,122,.28); }
     .msg.user .avatar { background: var(--pink-light); }
 
     .bubble {
-      padding: 13px 17px;
-      border-radius: var(--radius);
-      font-size: 14.5px; line-height: 1.65;
-      max-width: 580px;
+      padding: 13px 17px; border-radius: var(--radius);
+      font-size: 14.5px; line-height: 1.65; max-width: 580px;
     }
-    .msg.bot  .bubble {
-      background: var(--pink-pale);
-      border: 1.5px solid var(--border);
-      border-top-left-radius: 4px;
-      color: var(--text-dark);
-    }
-    .msg.user .bubble {
-      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
-      color: var(--white);
-      border-top-right-radius: 4px;
-      box-shadow: 0 4px 16px rgba(232,80,122,.28);
-    }
+    .msg.bot  .bubble { background: var(--pink-pale); border: 1.5px solid var(--border); border-top-left-radius: 4px; color: var(--text-dark); }
+    .msg.user .bubble { background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid)); color: var(--white); border-top-right-radius: 4px; box-shadow: 0 4px 16px rgba(232,80,122,.28); }
 
-    /* markdown-lite inside bubbles */
     .bubble strong { font-weight: 600; }
     .bubble em { font-style: italic; }
     .bubble ul { padding-left: 18px; margin-top: 6px; }
@@ -197,147 +193,212 @@
     .bubble p  { margin-bottom: 6px; }
     .bubble p:last-child { margin-bottom: 0; }
 
-    /* typing indicator */
-    .typing .bubble {
-      display: flex; align-items: center; gap: 6px;
-      padding: 14px 18px;
-    }
+    .typing .bubble { display: flex; align-items: center; gap: 6px; padding: 14px 18px; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink-mid); animation: bounce .9s infinite; }
     .dot:nth-child(2) { animation-delay: .15s; }
     .dot:nth-child(3) { animation-delay: .30s; }
     @keyframes bounce { 0%,60%,100%{ transform:translateY(0);} 30%{ transform:translateY(-6px);} }
 
-    /* timestamp */
     .ts { font-size: 10.5px; color: var(--text-light); margin-top: 4px; padding: 0 6px; }
     .msg.user .ts { text-align: right; }
 
-    /* ── INPUT AREA ── */
+    /* ── INPUT ── */
     .input-wrap {
-      padding: 16px 20px;
-      border-top: 1.5px solid var(--border);
-      background: var(--white);
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
+      padding: 16px 20px; border-top: 1.5px solid var(--border);
+      background: var(--white); display: flex; gap: 10px; align-items: flex-end;
     }
-
     #userInput {
-      flex: 1;
-      min-height: 46px; max-height: 130px;
-      padding: 12px 16px;
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14.5px;
-      color: var(--text-dark);
-      background: var(--pink-pale);
-      resize: none;
-      outline: none;
-      transition: border-color .2s;
-      line-height: 1.5;
+      flex: 1; min-height: 46px; max-height: 130px;
+      padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: 14px; font-family: 'DM Sans', sans-serif;
+      font-size: 14.5px; color: var(--text-dark); background: var(--pink-pale);
+      resize: none; outline: none; transition: border-color .2s; line-height: 1.5;
     }
     #userInput:focus { border-color: var(--pink-mid); background: var(--white); }
     #userInput::placeholder { color: var(--text-light); }
 
     #sendBtn {
-      width: 46px; height: 46px;
-      border-radius: 13px;
-      border: none;
+      width: 46px; height: 46px; border-radius: 13px; border: none;
       background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
+      color: white; font-size: 20px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 14px rgba(232,80,122,.30);
-      transition: transform .15s, box-shadow .15s;
-      flex-shrink: 0;
+      transition: transform .15s, box-shadow .15s; flex-shrink: 0;
     }
     #sendBtn:hover  { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(232,80,122,.40); }
     #sendBtn:active { transform: translateY(0); }
     #sendBtn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 
-    /* ── WELCOME CARD ── */
-    .welcome {
-      text-align: center;
-      padding: 30px 20px 10px;
-    }
+    /* ── WELCOME ── */
+    .welcome { text-align: center; padding: 30px 20px 10px; }
     .welcome .icon { font-size: 48px; margin-bottom: 14px; }
-    .welcome h2 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 28px; font-weight: 600;
-      color: var(--pink-deep);
-      margin-bottom: 8px;
-    }
+    .welcome h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; color: var(--pink-deep); margin-bottom: 8px; }
     .welcome p { font-size: 14px; color: var(--text-mid); line-height: 1.6; max-width: 420px; margin: 0 auto; }
 
-    /* ── HISTORY PANEL (slide-in) ── */
-    #historyBtn {
-      margin-left: 12px;
-      background: none; border: 1.5px solid var(--border);
-      border-radius: 10px; padding: 7px 13px;
-      font-size: 12.5px; color: var(--text-mid);
-      cursor: pointer; transition: all .18s;
-      font-family: 'DM Sans', sans-serif;
+    /* ── OVERLAYS ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(42,21,32,.22); z-index: 99;
+      backdrop-filter: blur(2px);
     }
-    #historyBtn:hover { background: var(--pink-light); border-color: var(--pink-mid); color: var(--pink-deep); }
+    .overlay.show { display: block; }
 
+    /* ── HISTORY PANEL ── */
     #historyPanel {
       position: fixed; top: 0; right: -320px;
       width: 300px; height: 100%;
-      background: var(--white);
-      border-left: 1.5px solid var(--border);
+      background: var(--white); border-left: 1.5px solid var(--border);
       box-shadow: -6px 0 30px rgba(232,80,122,.08);
-      transition: right .3s ease;
-      z-index: 100;
+      transition: right .3s ease; z-index: 100;
       display: flex; flex-direction: column;
     }
     #historyPanel.open { right: 0; }
-
-    .hp-header {
-      padding: 20px 18px 14px;
-      border-bottom: 1.5px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .hp-header h3 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 18px; color: var(--pink-deep);
-    }
-    #closeHistory { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light); }
-
-    #historyList {
-      flex: 1; overflow-y: auto;
-      padding: 12px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .history-item {
-      padding: 10px 13px;
-      border-radius: 10px;
-      border: 1.5px solid var(--border);
-      font-size: 13px; color: var(--text-mid);
-      cursor: pointer;
-      transition: all .18s;
-      line-height: 1.5;
-    }
+    .hp-header { padding: 20px 18px 14px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .hp-header h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--pink-deep); }
+    .hp-header p { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+    .panel-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light); transition: color .15s; }
+    .panel-close:hover { color: var(--pink-deep); }
+    #historyList { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .history-item { padding: 10px 13px; border-radius: 10px; border: 1.5px solid var(--border); font-size: 13px; color: var(--text-mid); cursor: pointer; transition: all .18s; line-height: 1.5; }
     .history-item:hover { background: var(--pink-light); border-color: var(--pink-mid); color: var(--text-dark); }
     .history-item .hi-role { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-light); margin-bottom: 3px; }
-
-    /* overlay */
-    #overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(42,21,32,.18);
-      z-index: 99;
-    }
-    #overlay.show { display: block; }
-
-    /* scrollbar for history */
     #historyList::-webkit-scrollbar { width: 4px; }
     #historyList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+    /* ── KB PANEL (left side) ── */
+    #kbPanel {
+      position: fixed; top: 0; left: -340px;
+      width: 320px; height: 100%;
+      background: var(--white); border-right: 1.5px solid var(--border);
+      box-shadow: 6px 0 30px rgba(232,80,122,.08);
+      transition: left .3s ease; z-index: 100;
+      display: flex; flex-direction: column;
+    }
+    #kbPanel.open { left: 0; }
+    #kbList { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .kb-item {
+      padding: 13px 14px; border-radius: 12px;
+      border: 1.5px solid var(--border); background: var(--pink-pale);
+      position: relative; transition: border-color .18s;
+    }
+    .kb-item:hover { border-color: var(--pink-mid); }
+    .kb-item-topic { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--pink-deep); font-weight: 600; margin-bottom: 5px; }
+    .kb-item-q { font-size: 13px; color: var(--text-dark); font-weight: 500; margin-bottom: 4px; }
+    .kb-item-a { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+    .kb-item-del {
+      position: absolute; top: 8px; right: 8px;
+      background: none; border: none; font-size: 14px;
+      color: var(--text-light); cursor: pointer; transition: all .15s;
+      padding: 3px 6px; border-radius: 6px;
+    }
+    .kb-item-del:hover { color: #ef4444; background: #fff0f0; }
+    .kb-item-badge { display: inline-block; font-size: 10px; padding: 2px 9px; border-radius: 10px; margin-top: 7px; background: var(--pink-light); color: var(--pink-deep); }
+    .kb-empty { padding: 30px 14px; font-size: 13px; color: var(--text-light); text-align: center; line-height: 1.7; }
+    #kbList::-webkit-scrollbar { width: 4px; }
+    #kbList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── ADD KNOWLEDGE MODAL ── */
+    #kbModal {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(.88);
+      width: min(500px, 94vw);
+      background: var(--white);
+      border-radius: 24px;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 24px 70px rgba(232,80,122,.22);
+      z-index: 200;
+      opacity: 0; pointer-events: none;
+      transition: all .28s cubic-bezier(.34,1.56,.64,1);
+      overflow: hidden;
+    }
+    #kbModal.open {
+      opacity: 1; pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .modal-header {
+      padding: 24px 26px 18px;
+      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .modal-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; color: white; }
+    .modal-header p { font-size: 12px; color: rgba(255,255,255,.78); margin-top: 3px; }
+    .modal-close {
+      background: rgba(255,255,255,.22); border: none;
+      border-radius: 8px; width: 32px; height: 32px;
+      color: white; font-size: 17px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s; flex-shrink: 0; margin-left: 12px;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.38); }
+
+    .modal-body { padding: 22px 24px 6px; display: flex; flex-direction: column; gap: 15px; }
+
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-group label { font-size: 11.5px; font-weight: 500; color: var(--text-mid); text-transform: uppercase; letter-spacing: .5px; }
+
+    .field-group input,
+    .field-group textarea,
+    .field-group select {
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text-dark);
+      background: var(--pink-pale);
+      outline: none;
+      transition: border-color .2s, background .2s;
+    }
+    .field-group input:focus,
+    .field-group textarea:focus,
+    .field-group select:focus { border-color: var(--pink-mid); background: var(--white); }
+    .field-group textarea { min-height: 95px; line-height: 1.55; resize: vertical; }
+    .field-hint { font-size: 11.5px; color: var(--text-light); }
+
+    .modal-footer { padding: 16px 24px 22px; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel {
+      padding: 10px 20px; border-radius: 11px;
+      border: 1.5px solid var(--border); background: none;
+      color: var(--text-mid); font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px; cursor: pointer; transition: all .18s;
+    }
+    .btn-cancel:hover { background: var(--pink-light); border-color: var(--pink-mid); }
+    .btn-save {
+      padding: 10px 22px; border-radius: 11px; border: none;
+      background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
+      color: white; font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px; font-weight: 500; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(232,80,122,.30);
+      transition: all .18s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(232,80,122,.42); }
+    .btn-save:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 30px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #1a1a2e; color: white;
+      padding: 12px 22px; border-radius: 40px;
+      font-size: 13.5px; font-weight: 500;
+      opacity: 0; pointer-events: none;
+      transition: all .3s; z-index: 300;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.25);
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { background: linear-gradient(135deg, #10b981, #059669); }
+    #toast.error   { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
     @media (max-width: 600px) {
-      header { padding: 14px 16px; }
-      #chat   { padding: 18px 14px; }
-      .bubble { max-width: calc(100vw - 100px); }
-      #historyPanel { width: 260px; }
+      header { padding: 12px 14px; gap: 8px; }
+      #chat { padding: 16px 12px; }
+      .bubble { max-width: calc(100vw - 96px); }
+      #historyPanel, #kbPanel { width: 270px; }
+      .header-text h1 { font-size: 18px; }
+      .hdr-btn span.label { display: none; }
     }
   </style>
 </head>
@@ -351,11 +412,15 @@
     <p>Your personal beauty &amp; cosmetics advisor</p>
   </div>
   <div class="status-dot" title="Online"></div>
-  <button id="historyBtn">🕑 History</button>
+  <div class="header-actions">
+    <button class="hdr-btn" id="kbViewBtn" title="View saved knowledge base">📚 <span class="label">My KB</span></button>
+    <button class="hdr-btn" id="historyBtn" title="View chat history">🕑 <span class="label">History</span></button>
+    <button id="addKbBtn" title="Add new knowledge to the chatbot">＋</button>
+  </div>
 </header>
 
 <!-- QUICK CHIPS -->
-<div class="suggestions">
+<div class="suggestions" id="chipsBar">
   <span class="chip" onclick="quickSend(this)">Best foundation for oily skin?</span>
   <span class="chip" onclick="quickSend(this)">Skincare routine for beginners</span>
   <span class="chip" onclick="quickSend(this)">How to do a smoky eye?</span>
@@ -366,12 +431,12 @@
   <span class="chip" onclick="quickSend(this)">How to make perfume last longer?</span>
 </div>
 
-<!-- CHAT MESSAGES -->
+<!-- CHAT -->
 <div id="chat">
   <div class="welcome">
     <div class="icon">✨</div>
     <h2>Hello, Beautiful!</h2>
-    <p>Ask me anything about makeup, skincare, haircare, or fragrance. I'm powered by AI and trained on all things beauty.</p>
+    <p>Ask me anything about makeup, skincare, haircare, or fragrance. Tap <strong>＋</strong> to teach me something new!</p>
   </div>
 </div>
 
@@ -381,15 +446,84 @@
   <button id="sendBtn" title="Send">➤</button>
 </div>
 
-<!-- HISTORY PANEL -->
-<div id="overlay"></div>
+<!-- OVERLAYS -->
+<div class="overlay" id="overlay"></div>
+<div class="overlay" id="modalOverlay"></div>
+
+<!-- HISTORY PANEL (right) -->
 <div id="historyPanel">
   <div class="hp-header">
-    <h3>💬 Chat History</h3>
-    <button id="closeHistory">✕</button>
+    <div><h3>💬 Chat History</h3></div>
+    <button class="panel-close" id="closeHistory">✕</button>
   </div>
-  <div id="historyList"><p style="padding:14px;font-size:13px;color:var(--text-light)">No history yet.</p></div>
+  <div id="historyList"><p style="padding:18px;font-size:13px;color:var(--text-light)">No history yet.</p></div>
 </div>
+
+<!-- KB PANEL (left) -->
+<div id="kbPanel">
+  <div class="hp-header">
+    <div>
+      <h3>📚 My Knowledge Base</h3>
+      <p>Custom entries saved to Firebase</p>
+    </div>
+    <button class="panel-close" id="closeKb">✕</button>
+  </div>
+  <div id="kbList"><p class="kb-empty">No custom entries yet.<br>Tap <strong>＋</strong> to teach me something new!</p></div>
+</div>
+
+<!-- ADD KNOWLEDGE MODAL -->
+<div id="kbModal">
+  <div class="modal-header">
+    <div>
+      <h2>✨ Add to Knowledge Base</h2>
+      <p>Teach Glam AI new beauty knowledge — saved to Firebase &amp; used in chat instantly</p>
+    </div>
+    <button class="modal-close" id="closeModal">✕</button>
+  </div>
+  <div class="modal-body">
+
+    <div class="field-group">
+      <label>Topic / Keyword</label>
+      <input type="text" id="kbTopic" placeholder="e.g. highlighter, toner, brow lamination" maxlength="60" />
+      <span class="field-hint">🔍 Keyword used to match user questions via RAG</span>
+    </div>
+
+    <div class="field-group">
+      <label>Trigger Question</label>
+      <input type="text" id="kbQuestion" placeholder="e.g. How do I apply highlighter correctly?" maxlength="160" />
+      <span class="field-hint">💬 What a user might ask to get this answer</span>
+    </div>
+
+    <div class="field-group">
+      <label>Answer / Knowledge</label>
+      <textarea id="kbAnswer" placeholder="e.g. Apply highlighter to the tops of cheekbones, bridge of nose, inner eye corners, and Cupid's bow. Use a fan brush for a natural glow. Cream highlighters work best on dry skin; powder on oily skin."></textarea>
+      <span class="field-hint">💡 The knowledge Glam AI will inject when answering</span>
+    </div>
+
+    <div class="field-group">
+      <label>Category</label>
+      <select id="kbCategory">
+        <option value="makeup">💄 Makeup</option>
+        <option value="skincare">🧴 Skincare</option>
+        <option value="haircare">💇 Haircare</option>
+        <option value="fragrance">🌸 Fragrance</option>
+        <option value="tools">🖌️ Tools &amp; Brushes</option>
+        <option value="nails">💅 Nails</option>
+        <option value="general">✨ General Beauty</option>
+      </select>
+    </div>
+
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancel" id="cancelModal">Cancel</button>
+    <button class="btn-save" id="saveKbBtn">
+      <span>💾</span> Save to Firebase
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
 
 <script>
 /* ===== CONFIG ===== */
@@ -397,8 +531,8 @@ const GROQ_API_KEY = "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";
 const GROQ_MODEL   = "llama-3.3-70b-versatile";
 const GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions";
 
-/* ===== COSMETICS KNOWLEDGE BASE (RAG) ===== */
-const KB = [
+/* ===== BUILT-IN KNOWLEDGE BASE ===== */
+const BUILTIN_KB = [
   { topic:"foundation", content:"For oily skin choose matte, oil-free foundations (e.g. Fenty Beauty Pro Filt'r, L'Oreal Infallible). For dry skin use hydrating formulas with hyaluronic acid. Always match undertones: cool (pink/blue), warm (yellow/peach), or neutral." },
   { topic:"skincare", content:"A basic routine: Cleanser → Toner → Serum (Vit C in AM, retinol in PM) → Moisturizer → SPF (AM only). Introduce actives gradually. Patch-test new products. Niacinamide helps pores and oiliness; hyaluronic acid hydrates all skin types." },
   { topic:"smoky eye", content:"Steps for smoky eye: 1. Prime lids. 2. Apply transition shade to crease. 3. Pack dark shade (black/dark brown) on lid. 4. Blend edges with windshield-wiper motion. 5. Add shimmer to center lid. 6. Smudge lower lash line. 7. Line waterline with black. Apply mascara last." },
@@ -411,18 +545,29 @@ const KB = [
   { topic:"contouring", content:"Contour with a shade 2–3 deeper than skin along hollows of cheeks, temples, jawline, and sides of nose. Highlight on cheekbones, bridge of nose, brow bone, and Cupid's bow. Blend thoroughly for a natural look." },
 ];
 
-function retrieveContext(query) {
-  const q = query.toLowerCase();
-  const hits = KB.filter(k => q.includes(k.topic) || k.content.toLowerCase().split(' ').some(w => w.length > 4 && q.includes(w)));
+/* Dynamic KB from Firebase */
+let dynamicKB = [];
+
+/* ===== RAG ===== */
+function retrieveContext(userQuery) {
+  const q = userQuery.toLowerCase();
+  const allKB = [
+    ...BUILTIN_KB,
+    ...dynamicKB.map(k => ({ topic: k.topic.toLowerCase(), content: `${k.question} — ${k.answer}` }))
+  ];
+  const hits = allKB.filter(k =>
+    q.includes(k.topic) ||
+    k.topic.split(' ').some(w => w.length > 3 && q.includes(w)) ||
+    k.content.toLowerCase().split(' ').some(w => w.length > 5 && q.includes(w))
+  );
   if (!hits.length) return "";
   return "Relevant beauty knowledge:\n" + hits.map(h => `- ${h.content}`).join("\n");
 }
 
-/* ===== CONVERSATION HISTORY ===== */
-let messages = [
-  {
-    role: "system",
-    content: `You are Glam AI, an expert beauty and cosmetics advisor. You have deep knowledge of skincare, makeup, haircare, fragrance, and beauty trends. You are warm, encouraging, and knowledgeable — like a friend who happens to be a professional makeup artist and esthetician.
+/* ===== CONVERSATION ===== */
+let messages = [{
+  role: "system",
+  content: `You are Glam AI, an expert beauty and cosmetics advisor. You have deep knowledge of skincare, makeup, haircare, fragrance, and beauty trends. You are warm, encouraging, and knowledgeable — like a friend who is also a professional makeup artist and esthetician.
 
 Guidelines:
 - Recommend specific products with brand names when relevant.
@@ -432,17 +577,13 @@ Guidelines:
 - Use beauty terminology naturally.
 - Keep responses concise but rich. Use bullet points for steps or lists.
 - If a question is unrelated to beauty/cosmetics, politely redirect to beauty topics.`
-  }
-];
+}];
 
-/* ===== UI HELPERS ===== */
-const chatEl   = document.getElementById("chat");
-const inputEl  = document.getElementById("userInput");
-const sendBtn  = document.getElementById("sendBtn");
-
-function now() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+/* ===== UI ===== */
+const chatEl  = document.getElementById("chat");
+const inputEl = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 function formatMarkdown(text) {
   return text
@@ -463,50 +604,75 @@ function appendMsg(role, html, time) {
   const div = document.createElement('div');
   div.className = `msg ${role}`;
   const avatar = role === 'bot' ? '💄' : '🌸';
-  div.innerHTML = `
-    <div class="avatar">${avatar}</div>
-    <div>
-      <div class="bubble">${html}</div>
-      <div class="ts">${time}</div>
-    </div>`;
+  div.innerHTML = `<div class="avatar">${avatar}</div><div><div class="bubble">${html}</div><div class="ts">${time}</div></div>`;
   chatEl.appendChild(div);
   chatEl.scrollTop = chatEl.scrollHeight;
-  return div;
 }
 
 function showTyping() {
   const div = document.createElement('div');
-  div.className = 'msg bot typing';
-  div.id = 'typing';
+  div.className = 'msg bot typing'; div.id = 'typing';
   div.innerHTML = `<div class="avatar">💄</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
+  chatEl.appendChild(div); chatEl.scrollTop = chatEl.scrollHeight;
+}
+function hideTyping() { const t = document.getElementById('typing'); if(t) t.remove(); }
+
+/* ===== TOAST ===== */
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.innerHTML = (type === 'success' ? '✅ ' : '❌ ') + msg;
+  t.className = `show ${type}`;
+  setTimeout(() => { t.className = ''; }, 3500);
 }
 
-function hideTyping() {
-  const t = document.getElementById('typing');
-  if (t) t.remove();
-}
-
-/* ===== FIREBASE SAVE ===== */
-async function saveToFirebase(role, text) {
+/* ===== FIREBASE HELPERS ===== */
+async function saveChat(role, text) {
   try {
     if (!window.__fbReady) return;
     await window.__addDoc(window.__collection(window.__db, "conversations"), {
-      role, text,
-      timestamp: window.__serverTimestamp()
+      role, text, timestamp: window.__serverTimestamp()
     });
-  } catch (e) { console.warn("Firebase save error:", e); }
+  } catch(e) { console.warn("Chat save error:", e); }
 }
 
-/* ===== LOAD HISTORY ===== */
+async function saveKBEntry(entry) {
+  if (!window.__fbReady) throw new Error("Firebase not ready");
+  const ref = await window.__addDoc(window.__collection(window.__db, "knowledgeBase"), {
+    ...entry, timestamp: window.__serverTimestamp()
+  });
+  return ref.id;
+}
+
+async function loadKBFromFirebase() {
+  if (!window.__fbReady) return;
+  try {
+    const q = window.__query(
+      window.__collection(window.__db, "knowledgeBase"),
+      window.__orderBy("timestamp", "desc")
+    );
+    const snap = await window.__getDocs(q);
+    dynamicKB = [];
+    snap.forEach(d => dynamicKB.push({ id: d.id, ...d.data() }));
+    renderKBPanel();
+    // Add chips for custom entries
+    refreshCustomChips();
+  } catch(e) { console.warn("KB load error:", e); }
+}
+
+async function deleteKBEntry(id) {
+  try {
+    await window.__deleteDoc(window.__doc(window.__db, "knowledgeBase", id));
+    dynamicKB = dynamicKB.filter(k => k.id !== id);
+    renderKBPanel();
+    refreshCustomChips();
+    showToast("Entry deleted from Firebase");
+  } catch(e) { showToast("Delete failed: " + e.message, "error"); }
+}
+
 async function loadHistory() {
   if (!window.__fbReady) { setTimeout(loadHistory, 800); return; }
   try {
-    const q = window.__query(
-      window.__collection(window.__db, "conversations"),
-      window.__orderBy("timestamp", "desc")
-    );
+    const q = window.__query(window.__collection(window.__db, "conversations"), window.__orderBy("timestamp","desc"));
     const snap = await window.__getDocs(q);
     const list = document.getElementById('historyList');
     if (snap.empty) return;
@@ -516,102 +682,159 @@ async function loadHistory() {
       const item = document.createElement('div');
       item.className = 'history-item';
       const label = d.role === 'user' ? '🌸 You' : '💄 Glam AI';
-      item.innerHTML = `<div class="hi-role">${label}</div>${d.text.substring(0,90)}${d.text.length > 90 ? '…' : ''}`;
-      item.onclick = () => {
-        closeHistory();
-        appendMsg(d.role === 'user' ? 'user' : 'bot', formatMarkdown(d.text), '(history)');
-      };
+      item.innerHTML = `<div class="hi-role">${label}</div>${d.text.substring(0,90)}${d.text.length>90?'…':''}`;
+      item.onclick = () => { closeHistory(); appendMsg(d.role==='user'?'user':'bot', formatMarkdown(d.text), '(history)'); };
       list.appendChild(item);
     });
   } catch(e) { console.warn("History load error:", e); }
 }
 
-window.addEventListener("firebase-ready", () => setTimeout(loadHistory, 500));
+window.addEventListener("firebase-ready", () => {
+  setTimeout(loadHistory, 500);
+  setTimeout(loadKBFromFirebase, 600);
+});
 
-/* ===== SEND MESSAGE ===== */
+/* ===== KB PANEL ===== */
+const catEmoji = { makeup:'💄', skincare:'🧴', haircare:'💇', fragrance:'🌸', tools:'🖌️', nails:'💅', general:'✨' };
+
+function renderKBPanel() {
+  const list = document.getElementById('kbList');
+  if (!dynamicKB.length) {
+    list.innerHTML = '<p class="kb-empty">No custom entries yet.<br>Tap <strong>＋</strong> to add your first one!</p>';
+    return;
+  }
+  list.innerHTML = '';
+  dynamicKB.forEach(k => {
+    const div = document.createElement('div');
+    div.className = 'kb-item';
+    div.innerHTML = `
+      <div class="kb-item-topic">${k.topic}</div>
+      <div class="kb-item-q">❓ ${k.question}</div>
+      <div class="kb-item-a">💬 ${k.answer.substring(0,110)}${k.answer.length>110?'…':''}</div>
+      <span class="kb-item-badge">${catEmoji[k.category]||'✨'} ${k.category}</span>
+      <button class="kb-item-del" onclick="deleteKBEntry('${k.id}')" title="Delete this entry">🗑</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* Refresh custom chips in suggestion bar */
+function refreshCustomChips() {
+  // Remove old custom chips
+  document.querySelectorAll('.chip.custom').forEach(c => c.remove());
+  // Add current ones
+  dynamicKB.slice(0, 6).forEach(k => {
+    const bar = document.getElementById('chipsBar');
+    const chip = document.createElement('span');
+    chip.className = 'chip custom';
+    const label = k.question.length > 38 ? k.question.substring(0,36)+'…' : k.question;
+    chip.textContent = label;
+    chip.title = k.question;
+    chip.onclick = function() { quickSend(this); };
+    bar.appendChild(chip);
+  });
+}
+
+/* ===== SEND ===== */
 async function send(text) {
   if (!text.trim()) return;
-  inputEl.value = '';
-  inputEl.style.height = '';
+  inputEl.value = ''; inputEl.style.height = '';
   sendBtn.disabled = true;
 
-  const t = now();
-  appendMsg('user', formatMarkdown(text), t);
-  await saveToFirebase('user', text);
+  appendMsg('user', formatMarkdown(text), now());
+  await saveChat('user', text);
 
-  // RAG context injection
   const ctx = retrieveContext(text);
   const augmented = ctx ? `${ctx}\n\nUser question: ${text}` : text;
-
   messages.push({ role: "user", content: augmented });
-
   showTyping();
 
   try {
     const res = await fetch(GROQ_URL, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages,
-        temperature: 0.75,
-        max_tokens: 900,
-        stream: false
-      })
+      headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0.75, max_tokens: 900 })
     });
-
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() || "I couldn't fetch a response. Please try again!";
-
     messages.push({ role: "assistant", content: reply });
     hideTyping();
     appendMsg('bot', formatMarkdown(reply), now());
-    await saveToFirebase('assistant', reply);
-
+    await saveChat('assistant', reply);
   } catch(err) {
     hideTyping();
     appendMsg('bot', `<em>Oops — couldn't reach the beauty server: ${err.message}</em>`, now());
     messages.pop();
   }
-
   sendBtn.disabled = false;
 }
 
-/* ===== EVENTS ===== */
 sendBtn.onclick = () => send(inputEl.value);
+inputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(inputEl.value); } });
+inputEl.addEventListener('input', () => { inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,130)+'px'; });
+function quickSend(el) { send(el.title || el.textContent.trim()); }
 
-inputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(inputEl.value); }
-});
+/* ===== MODAL ===== */
+const modal = document.getElementById('kbModal');
+const modalOverlay = document.getElementById('modalOverlay');
 
-inputEl.addEventListener('input', () => {
-  inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 130) + 'px';
-});
-
-function quickSend(el) { send(el.textContent); }
-
-/* ===== HISTORY PANEL ===== */
-const panel   = document.getElementById('historyPanel');
-const overlay = document.getElementById('overlay');
-
-document.getElementById('historyBtn').onclick = () => {
-  panel.classList.add('open');
-  overlay.classList.add('show');
-  loadHistory();
-};
-
-function closeHistory() {
-  panel.classList.remove('open');
-  overlay.classList.remove('show');
+function openModal() {
+  modal.classList.add('open');
+  modalOverlay.classList.add('show');
+  setTimeout(() => document.getElementById('kbTopic').focus(), 150);
+}
+function closeModal() {
+  modal.classList.remove('open');
+  modalOverlay.classList.remove('show');
+  ['kbTopic','kbQuestion','kbAnswer'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('kbCategory').value = 'makeup';
 }
 
+document.getElementById('addKbBtn').onclick = openModal;
+document.getElementById('closeModal').onclick = closeModal;
+document.getElementById('cancelModal').onclick = closeModal;
+modalOverlay.onclick = closeModal;
+
+document.getElementById('saveKbBtn').onclick = async () => {
+  const topic    = document.getElementById('kbTopic').value.trim();
+  const question = document.getElementById('kbQuestion').value.trim();
+  const answer   = document.getElementById('kbAnswer').value.trim();
+  const category = document.getElementById('kbCategory').value;
+
+  if (!topic)    { showToast("Please enter a topic keyword", "error"); return; }
+  if (!question) { showToast("Please enter a trigger question", "error"); return; }
+  if (!answer)   { showToast("Please enter the knowledge/answer", "error"); return; }
+
+  const btn = document.getElementById('saveKbBtn');
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Saving to Firebase…';
+
+  try {
+    const id = await saveKBEntry({ topic, question, answer, category });
+    dynamicKB.unshift({ id, topic, question, answer, category });
+    renderKBPanel();
+    refreshCustomChips();
+    closeModal();
+    showToast(`"${topic}" added! Glam AI now knows this 🎉`);
+  } catch(e) {
+    showToast("Save failed: " + e.message, "error");
+  }
+  btn.disabled = false; btn.innerHTML = '<span>💾</span> Save to Firebase';
+};
+
+/* ===== HISTORY PANEL ===== */
+const histPanel = document.getElementById('historyPanel');
+const overlay   = document.getElementById('overlay');
+
+document.getElementById('historyBtn').onclick = () => { histPanel.classList.add('open'); overlay.classList.add('show'); loadHistory(); };
+function closeHistory() { histPanel.classList.remove('open'); overlay.classList.remove('show'); }
 document.getElementById('closeHistory').onclick = closeHistory;
-overlay.onclick = closeHistory;
+overlay.onclick = () => { closeHistory(); document.getElementById('kbPanel').classList.remove('open'); };
+
+/* ===== KB PANEL ===== */
+const kbPanel = document.getElementById('kbPanel');
+document.getElementById('kbViewBtn').onclick = () => { kbPanel.classList.add('open'); overlay.classList.add('show'); loadKBFromFirebase(); };
+document.getElementById('closeKb').onclick   = () => { kbPanel.classList.remove('open'); overlay.classList.remove('show'); };
 </script>
 </body>
 </html>
