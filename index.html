@@ -481,25 +481,21 @@
     <button class="modal-close" id="closeModal">✕</button>
   </div>
   <div class="modal-body">
-
     <div class="field-group">
       <label>Topic / Keyword</label>
       <input type="text" id="kbTopic" placeholder="e.g. highlighter, toner, brow lamination" maxlength="60" />
       <span class="field-hint">🔍 Keyword used to match user questions via RAG</span>
     </div>
-
     <div class="field-group">
       <label>Trigger Question</label>
       <input type="text" id="kbQuestion" placeholder="e.g. How do I apply highlighter correctly?" maxlength="160" />
       <span class="field-hint">💬 What a user might ask to get this answer</span>
     </div>
-
     <div class="field-group">
       <label>Answer / Knowledge</label>
       <textarea id="kbAnswer" placeholder="e.g. Apply highlighter to the tops of cheekbones, bridge of nose, inner eye corners, and Cupid's bow. Use a fan brush for a natural glow. Cream highlighters work best on dry skin; powder on oily skin."></textarea>
       <span class="field-hint">💡 The knowledge Glam AI will inject when answering</span>
     </div>
-
     <div class="field-group">
       <label>Category</label>
       <select id="kbCategory">
@@ -512,7 +508,6 @@
         <option value="general">✨ General Beauty</option>
       </select>
     </div>
-
   </div>
   <div class="modal-footer">
     <button class="btn-cancel" id="cancelModal">Cancel</button>
@@ -526,10 +521,8 @@
 <div id="toast"></div>
 
 <script>
-/* ===== CONFIG ===== */
-const GROQ_API_KEY = "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";
-const GROQ_MODEL   = "llama-3.3-70b-versatile";
-const GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions";
+/* ===== CONFIG — no API key here, handled server-side via /api/chat ===== */
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 /* ===== BUILT-IN KNOWLEDGE BASE ===== */
 const BUILTIN_KB = [
@@ -654,7 +647,6 @@ async function loadKBFromFirebase() {
     dynamicKB = [];
     snap.forEach(d => dynamicKB.push({ id: d.id, ...d.data() }));
     renderKBPanel();
-    // Add chips for custom entries
     refreshCustomChips();
   } catch(e) { console.warn("KB load error:", e); }
 }
@@ -718,11 +710,8 @@ function renderKBPanel() {
   });
 }
 
-/* Refresh custom chips in suggestion bar */
 function refreshCustomChips() {
-  // Remove old custom chips
   document.querySelectorAll('.chip.custom').forEach(c => c.remove());
-  // Add current ones
   dynamicKB.slice(0, 6).forEach(k => {
     const bar = document.getElementById('chipsBar');
     const chip = document.createElement('span');
@@ -735,7 +724,7 @@ function refreshCustomChips() {
   });
 }
 
-/* ===== SEND ===== */
+/* ===== SEND — calls /api/chat proxy (no key in frontend) ===== */
 async function send(text) {
   if (!text.trim()) return;
   inputEl.value = ''; inputEl.style.height = '';
@@ -750,9 +739,10 @@ async function send(text) {
   showTyping();
 
   try {
-    const res = await fetch(GROQ_URL, {
+    /* Key lives in Vercel env — never exposed to the browser */
+    const res = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0.75, max_tokens: 900 })
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
