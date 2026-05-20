@@ -8,7 +8,7 @@
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, deleteDoc, doc }
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, deleteDoc, doc, where }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
 
@@ -26,16 +26,17 @@
     const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    window.__db = db;
-    window.__fbReady = true;
-    window.__addDoc = addDoc;
-    window.__collection = collection;
-    window.__getDocs = getDocs;
-    window.__query = query;
-    window.__orderBy = orderBy;
+    window.__db            = db;
+    window.__fbReady       = true;
+    window.__addDoc        = addDoc;
+    window.__collection    = collection;
+    window.__getDocs       = getDocs;
+    window.__query         = query;
+    window.__orderBy       = orderBy;
     window.__serverTimestamp = serverTimestamp;
-    window.__deleteDoc = deleteDoc;
-    window.__doc = doc;
+    window.__deleteDoc     = deleteDoc;
+    window.__doc           = doc;
+    window.__where         = where;
     window.dispatchEvent(new Event("firebase-ready"));
   </script>
 
@@ -70,16 +71,12 @@
 
     /* ── HEADER ── */
     header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      display: flex; align-items: center; gap: 14px;
       padding: 18px 28px;
       border-bottom: 1.5px solid var(--border);
       background: var(--white);
-      position: relative;
-      z-index: 10;
+      position: relative; z-index: 10;
     }
-
     .logo-wrap {
       width: 44px; height: 44px;
       background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
@@ -88,18 +85,15 @@
       font-size: 22px;
       box-shadow: 0 4px 14px rgba(232,80,122,.30);
     }
-
     .header-text h1 {
       font-family: 'Cormorant Garamond', serif;
       font-size: 22px; font-weight: 600;
-      color: var(--pink-deep);
-      letter-spacing: .5px;
+      color: var(--pink-deep); letter-spacing: .5px;
     }
     .header-text p { font-size: 11.5px; color: var(--text-light); letter-spacing: .3px; margin-top: 1px; }
 
     .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #34d399;
+      width: 8px; height: 8px; border-radius: 50%; background: #34d399;
       margin-left: auto;
       box-shadow: 0 0 0 3px rgba(52,211,153,.22);
       animation: pulse 2s infinite;
@@ -110,30 +104,25 @@
     }
 
     .header-actions { display: flex; gap: 8px; align-items: center; }
-
     .hdr-btn {
       background: none; border: 1.5px solid var(--border);
       border-radius: 10px; padding: 7px 13px;
       font-size: 12.5px; color: var(--text-mid);
       cursor: pointer; transition: all .18s;
       font-family: 'DM Sans', sans-serif;
-      display: flex; align-items: center; gap: 5px;
-      white-space: nowrap;
+      display: flex; align-items: center; gap: 5px; white-space: nowrap;
     }
     .hdr-btn:hover { background: var(--pink-light); border-color: var(--pink-mid); color: var(--pink-deep); }
 
-    /* ── + ADD BUTTON ── */
     #addKbBtn {
-      width: 38px; height: 38px;
-      border-radius: 11px; border: none;
+      width: 38px; height: 38px; border-radius: 11px; border: none;
       background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
       color: white; font-size: 24px; font-weight: 300;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 3px 12px rgba(232,80,122,.38);
       transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .18s;
-      flex-shrink: 0;
-      line-height: 1;
+      flex-shrink: 0; line-height: 1;
     }
     #addKbBtn:hover { transform: rotate(90deg) scale(1.12); box-shadow: 0 6px 20px rgba(232,80,122,.50); }
     #addKbBtn:active { transform: scale(.9); }
@@ -185,13 +174,21 @@
     }
     .msg.bot  .bubble { background: var(--pink-pale); border: 1.5px solid var(--border); border-top-left-radius: 4px; color: var(--text-dark); }
     .msg.user .bubble { background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid)); color: var(--white); border-top-right-radius: 4px; box-shadow: 0 4px 16px rgba(232,80,122,.28); }
-
     .bubble strong { font-weight: 600; }
     .bubble em { font-style: italic; }
     .bubble ul { padding-left: 18px; margin-top: 6px; }
     .bubble li { margin-bottom: 4px; }
     .bubble p  { margin-bottom: 6px; }
     .bubble p:last-child { margin-bottom: 0; }
+
+    /* RAG source badge */
+    .rag-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10.5px; padding: 2px 9px; border-radius: 10px;
+      margin-top: 8px;
+      background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.3);
+      color: #059669;
+    }
 
     .typing .bubble { display: flex; align-items: center; gap: 6px; padding: 14px 18px; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pink-mid); animation: bounce .9s infinite; }
@@ -216,7 +213,6 @@
     }
     #userInput:focus { border-color: var(--pink-mid); background: var(--white); }
     #userInput::placeholder { color: var(--text-light); }
-
     #sendBtn {
       width: 46px; height: 46px; border-radius: 13px; border: none;
       background: linear-gradient(135deg, var(--pink-deep), var(--pink-mid));
@@ -236,11 +232,7 @@
     .welcome p { font-size: 14px; color: var(--text-mid); line-height: 1.6; max-width: 420px; margin: 0 auto; }
 
     /* ── OVERLAYS ── */
-    .overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(42,21,32,.22); z-index: 99;
-      backdrop-filter: blur(2px);
-    }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(42,21,32,.22); z-index: 99; backdrop-filter: blur(2px); }
     .overlay.show { display: block; }
 
     /* ── HISTORY PANEL ── */
@@ -255,7 +247,7 @@
     #historyPanel.open { right: 0; }
     .hp-header { padding: 20px 18px 14px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     .hp-header h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--pink-deep); }
-    .hp-header p { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+    .hp-header p  { font-size: 11px; color: var(--text-light); margin-top: 2px; }
     .panel-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light); transition: color .15s; }
     .panel-close:hover { color: var(--pink-deep); }
     #historyList { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -265,16 +257,32 @@
     #historyList::-webkit-scrollbar { width: 4px; }
     #historyList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* ── KB PANEL (left side) ── */
+    /* ── KB PANEL ── */
     #kbPanel {
-      position: fixed; top: 0; left: -340px;
-      width: 320px; height: 100%;
+      position: fixed; top: 0; left: -360px;
+      width: 340px; height: 100%;
       background: var(--white); border-right: 1.5px solid var(--border);
       box-shadow: 6px 0 30px rgba(232,80,122,.08);
       transition: left .3s ease; z-index: 100;
       display: flex; flex-direction: column;
     }
     #kbPanel.open { left: 0; }
+
+    /* KB filter tabs */
+    .kb-filter-row {
+      display: flex; gap: 5px; flex-wrap: wrap;
+      padding: 10px 12px 6px; border-bottom: 1px solid var(--border);
+      background: var(--pink-pale);
+    }
+    .kb-tab {
+      padding: 4px 10px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white); color: var(--text-mid);
+      font-size: 11.5px; font-weight: 500; cursor: pointer;
+      transition: all .15s; white-space: nowrap;
+    }
+    .kb-tab.active { background: var(--pink-deep); color: white; border-color: var(--pink-deep); }
+
     #kbList { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
     .kb-item {
       padding: 13px 14px; border-radius: 12px;
@@ -282,9 +290,9 @@
       position: relative; transition: border-color .18s;
     }
     .kb-item:hover { border-color: var(--pink-mid); }
-    .kb-item-topic { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--pink-deep); font-weight: 600; margin-bottom: 5px; }
-    .kb-item-q { font-size: 13px; color: var(--text-dark); font-weight: 500; margin-bottom: 4px; }
-    .kb-item-a { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+    .kb-item-topic  { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--pink-deep); font-weight: 600; margin-bottom: 5px; }
+    .kb-item-q      { font-size: 13px; color: var(--text-dark); font-weight: 500; margin-bottom: 4px; }
+    .kb-item-a      { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
     .kb-item-del {
       position: absolute; top: 8px; right: 8px;
       background: none; border: none; font-size: 14px;
@@ -293,6 +301,7 @@
     }
     .kb-item-del:hover { color: #ef4444; background: #fff0f0; }
     .kb-item-badge { display: inline-block; font-size: 10px; padding: 2px 9px; border-radius: 10px; margin-top: 7px; background: var(--pink-light); color: var(--pink-deep); }
+    .kb-item-coll  { display: inline-block; font-size: 10px; padding: 2px 9px; border-radius: 10px; margin-top: 7px; margin-left: 4px; background: rgba(52,211,153,.1); color: #059669; border: 1px solid rgba(52,211,153,.2); }
     .kb-empty { padding: 30px 14px; font-size: 13px; color: var(--text-light); text-align: center; line-height: 1.7; }
     #kbList::-webkit-scrollbar { width: 4px; }
     #kbList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -302,19 +311,14 @@
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%) scale(.88);
       width: min(500px, 94vw);
-      background: var(--white);
-      border-radius: 24px;
+      background: var(--white); border-radius: 24px;
       border: 1.5px solid var(--border);
       box-shadow: 0 24px 70px rgba(232,80,122,.22);
-      z-index: 200;
-      opacity: 0; pointer-events: none;
+      z-index: 200; opacity: 0; pointer-events: none;
       transition: all .28s cubic-bezier(.34,1.56,.64,1);
       overflow: hidden;
     }
-    #kbModal.open {
-      opacity: 1; pointer-events: all;
-      transform: translate(-50%, -50%) scale(1);
-    }
+    #kbModal.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
 
     .modal-header {
       padding: 24px 26px 18px;
@@ -322,7 +326,7 @@
       display: flex; align-items: flex-start; justify-content: space-between;
     }
     .modal-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; color: white; }
-    .modal-header p { font-size: 12px; color: rgba(255,255,255,.78); margin-top: 3px; }
+    .modal-header p  { font-size: 12px; color: rgba(255,255,255,.78); margin-top: 3px; }
     .modal-close {
       background: rgba(255,255,255,.22); border: none;
       border-radius: 8px; width: 32px; height: 32px;
@@ -333,28 +337,29 @@
     .modal-close:hover { background: rgba(255,255,255,.38); }
 
     .modal-body { padding: 22px 24px 6px; display: flex; flex-direction: column; gap: 15px; }
-
     .field-group { display: flex; flex-direction: column; gap: 6px; }
     .field-group label { font-size: 11.5px; font-weight: 500; color: var(--text-mid); text-transform: uppercase; letter-spacing: .5px; }
-
     .field-group input,
     .field-group textarea,
     .field-group select {
-      padding: 11px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      color: var(--text-dark);
-      background: var(--pink-pale);
-      outline: none;
-      transition: border-color .2s, background .2s;
+      padding: 11px 14px; border: 1.5px solid var(--border);
+      border-radius: 12px; font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: var(--text-dark); background: var(--pink-pale);
+      outline: none; transition: border-color .2s, background .2s;
     }
     .field-group input:focus,
     .field-group textarea:focus,
     .field-group select:focus { border-color: var(--pink-mid); background: var(--white); }
     .field-group textarea { min-height: 95px; line-height: 1.55; resize: vertical; }
     .field-hint { font-size: 11.5px; color: var(--text-light); }
+
+    /* Collection preview pill inside modal */
+    .coll-preview {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 5px; padding: 4px 11px; border-radius: 8px;
+      background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.25);
+      font-size: 11.5px; color: #059669;
+    }
 
     .modal-footer { padding: 16px 24px 22px; display: flex; gap: 10px; justify-content: flex-end; }
     .btn-cancel {
@@ -463,12 +468,23 @@
 <div id="kbPanel">
   <div class="hp-header">
     <div>
-      <h3>📚 My Knowledge Base</h3>
-      <p>Custom entries saved to Firebase</p>
+      <h3>📚 Knowledge Base</h3>
+      <p>All entries — shared across all users</p>
     </div>
     <button class="panel-close" id="closeKb">✕</button>
   </div>
-  <div id="kbList"><p class="kb-empty">No custom entries yet.<br>Tap <strong>＋</strong> to teach me something new!</p></div>
+  <!-- Category filter tabs -->
+  <div class="kb-filter-row" id="kbFilterRow">
+    <div class="kb-tab active" data-cat="all"       onclick="filterKB('all')">🗺 All</div>
+    <div class="kb-tab" data-cat="makeup"           onclick="filterKB('makeup')">💄 Makeup</div>
+    <div class="kb-tab" data-cat="skincare"         onclick="filterKB('skincare')">🧴 Skincare</div>
+    <div class="kb-tab" data-cat="haircare"         onclick="filterKB('haircare')">💇 Hair</div>
+    <div class="kb-tab" data-cat="fragrance"        onclick="filterKB('fragrance')">🌸 Fragrance</div>
+    <div class="kb-tab" data-cat="tools"            onclick="filterKB('tools')">🖌 Tools</div>
+    <div class="kb-tab" data-cat="nails"            onclick="filterKB('nails')">💅 Nails</div>
+    <div class="kb-tab" data-cat="general"          onclick="filterKB('general')">✨ General</div>
+  </div>
+  <div id="kbList"><p class="kb-empty">Loading knowledge base…</p></div>
 </div>
 
 <!-- ADD KNOWLEDGE MODAL -->
@@ -476,7 +492,7 @@
   <div class="modal-header">
     <div>
       <h2>✨ Add to Knowledge Base</h2>
-      <p>Teach Glam AI new beauty knowledge — saved to Firebase &amp; used in chat instantly</p>
+      <p>Teach Glam AI new beauty knowledge — saved to Firebase &amp; available to all users instantly</p>
     </div>
     <button class="modal-close" id="closeModal">✕</button>
   </div>
@@ -484,7 +500,7 @@
     <div class="field-group">
       <label>Topic / Keyword</label>
       <input type="text" id="kbTopic" placeholder="e.g. highlighter, toner, brow lamination" maxlength="60" />
-      <span class="field-hint">🔍 Keyword used to match user questions via RAG</span>
+      <span class="field-hint">🔍 Keyword matched to user questions via NLP+RAG</span>
     </div>
     <div class="field-group">
       <label>Trigger Question</label>
@@ -493,12 +509,17 @@
     </div>
     <div class="field-group">
       <label>Answer / Knowledge</label>
-      <textarea id="kbAnswer" placeholder="e.g. Apply highlighter to the tops of cheekbones, bridge of nose, inner eye corners, and Cupid's bow. Use a fan brush for a natural glow. Cream highlighters work best on dry skin; powder on oily skin."></textarea>
-      <span class="field-hint">💡 The knowledge Glam AI will inject when answering</span>
+      <textarea id="kbAnswer" placeholder="e.g. Apply highlighter to the tops of cheekbones, bridge of nose, inner eye corners…"></textarea>
+      <span class="field-hint">💡 What Glam AI will say when this topic is detected</span>
+    </div>
+    <div class="field-group">
+      <label>Aliases / Extra Keywords <span style="font-weight:400;text-transform:none">(comma separated)</span></label>
+      <input type="text" id="kbAliases" placeholder="e.g. glow, shimmer, highlight cheeks" maxlength="200" />
+      <span class="field-hint">🔗 Extra keywords to improve matching</span>
     </div>
     <div class="field-group">
       <label>Category</label>
-      <select id="kbCategory">
+      <select id="kbCategory" onchange="updateCollPreview()">
         <option value="makeup">💄 Makeup</option>
         <option value="skincare">🧴 Skincare</option>
         <option value="haircare">💇 Haircare</option>
@@ -507,13 +528,15 @@
         <option value="nails">💅 Nails</option>
         <option value="general">✨ General Beauty</option>
       </select>
+      <!-- Shows exact Firestore collection target -->
+      <div class="coll-preview">
+        📂 Saves to Firestore → <strong id="collPreviewName">products</strong>
+      </div>
     </div>
   </div>
   <div class="modal-footer">
     <button class="btn-cancel" id="cancelModal">Cancel</button>
-    <button class="btn-save" id="saveKbBtn">
-      <span>💾</span> Save to Firebase
-    </button>
+    <button class="btn-save" id="saveKbBtn"><span>💾</span> Save to Firebase</button>
   </div>
 </div>
 
@@ -521,104 +544,310 @@
 <div id="toast"></div>
 
 <script>
-/* ===== CONFIG — no API key here, handled server-side via /api/chat ===== */
+'use strict';
+
+/* ════════════════════════════════════════════════════
+   CATEGORY → FIRESTORE COLLECTION MAPPING
+   Maps each UI category to its Firestore collection,
+   matching your existing database structure exactly.
+   New entries from the + button go directly into the
+   correct collection and are readable by all users.
+════════════════════════════════════════════════════ */
+const CATEGORY_COLLECTIONS = {
+  makeup:    'products',       // Makeup products → products collection
+  skincare:  'skinTypes',      // Skincare → skinTypes collection
+  haircare:  'products',       // Haircare products → products collection
+  fragrance: 'products',       // Fragrance → products collection
+  tools:     'ingredients',    // Tools/brushes → ingredients collection
+  nails:     'products',       // Nails → products collection
+  general:   'faqs'            // General beauty tips → faqs collection
+};
+
+// All collections to read from for the shared KB (includes all your existing ones)
+const ALL_KB_COLLECTIONS = ['products', 'skinTypes', 'ingredients', 'faqs', 'intents', 'knowledgeBase'];
+
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
-/* ===== BUILT-IN KNOWLEDGE BASE ===== */
+/* ════════════════════════════════════════════════════
+   BUILT-IN KNOWLEDGE BASE (always available, offline)
+════════════════════════════════════════════════════ */
 const BUILTIN_KB = [
-  { topic:"foundation", content:"For oily skin choose matte, oil-free foundations (e.g. Fenty Beauty Pro Filt'r, L'Oreal Infallible). For dry skin use hydrating formulas with hyaluronic acid. Always match undertones: cool (pink/blue), warm (yellow/peach), or neutral." },
-  { topic:"skincare", content:"A basic routine: Cleanser → Toner → Serum (Vit C in AM, retinol in PM) → Moisturizer → SPF (AM only). Introduce actives gradually. Patch-test new products. Niacinamide helps pores and oiliness; hyaluronic acid hydrates all skin types." },
-  { topic:"smoky eye", content:"Steps for smoky eye: 1. Prime lids. 2. Apply transition shade to crease. 3. Pack dark shade (black/dark brown) on lid. 4. Blend edges with windshield-wiper motion. 5. Add shimmer to center lid. 6. Smudge lower lash line. 7. Line waterline with black. Apply mascara last." },
-  { topic:"lipstick", content:"Dark skin tones suit rich berries, oxbloods, deep nudes, and bright corals. Medium tones flatter mauve, terracotta, and rose. Fair tones suit pinks, nudes, and classic reds. Always exfoliate and prime lips for longer wear." },
-  { topic:"cruelty-free", content:"Top cruelty-free mascara brands: e.l.f. Cosmetics, Too Faced, Pacifica, Tarte, Urban Decay, Milani. Look for Leaping Bunny or PETA certification logos." },
-  { topic:"SPF makeup", content:"Makeup SPF is supplemental, not sufficient as your only sun protection. Wear a dedicated SPF 30–50 under makeup. Powder SPFs are great for reapplication during the day over makeup." },
-  { topic:"blush", content:"Fair skin: peachy pinks and soft roses. Medium skin: coral, mauve, dusty rose. Olive: terracotta, warm brick. Dark skin: deep berry, warm copper, plum. Apply to apples of cheeks and blend upward toward temples." },
-  { topic:"perfume", content:"To make fragrance last: apply to pulse points (wrists, neck, behind knees) on moisturized skin. Layer with matching body lotion. Don't rub wrists together — it breaks down top notes. Store in cool, dark places away from humidity." },
-  { topic:"concealer", content:"Use concealer one shade lighter than foundation under eyes. For blemishes, match concealer to your skin tone exactly. Banana setting powder sets under-eye concealer and prevents creasing." },
-  { topic:"contouring", content:"Contour with a shade 2–3 deeper than skin along hollows of cheeks, temples, jawline, and sides of nose. Highlight on cheekbones, bridge of nose, brow bone, and Cupid's bow. Blend thoroughly for a natural look." },
+  { topic:"foundation", content:"For oily skin choose matte, oil-free foundations (e.g. Fenty Beauty Pro Filt'r, L'Oreal Infallible). For dry skin use hydrating formulas with hyaluronic acid. Always match undertones: cool (pink/blue), warm (yellow/peach), or neutral.", _source:'builtin' },
+  { topic:"skincare", content:"A basic routine: Cleanser → Toner → Serum (Vit C in AM, retinol in PM) → Moisturizer → SPF (AM only). Introduce actives gradually. Patch-test new products. Niacinamide helps pores and oiliness; hyaluronic acid hydrates all skin types.", _source:'builtin' },
+  { topic:"smoky eye", content:"Steps for smoky eye: 1. Prime lids. 2. Apply transition shade to crease. 3. Pack dark shade on lid. 4. Blend edges. 5. Add shimmer to center lid. 6. Smudge lower lash line. 7. Line waterline with black. Apply mascara last.", _source:'builtin' },
+  { topic:"lipstick", content:"Dark skin tones suit rich berries, oxbloods, deep nudes, and bright corals. Medium tones flatter mauve, terracotta, and rose. Fair tones suit pinks, nudes, and classic reds. Always exfoliate and prime lips for longer wear.", _source:'builtin' },
+  { topic:"cruelty-free mascara", content:"Top cruelty-free mascara brands: e.l.f. Cosmetics, Too Faced, Pacifica, Tarte, Urban Decay, Milani. Look for Leaping Bunny or PETA certification logos.", _source:'builtin' },
+  { topic:"spf makeup", content:"Makeup SPF is supplemental, not sufficient alone. Wear a dedicated SPF 30–50 under makeup. Powder SPFs are great for reapplication during the day over makeup.", _source:'builtin' },
+  { topic:"blush", content:"Fair skin: peachy pinks and soft roses. Medium skin: coral, mauve, dusty rose. Olive: terracotta, warm brick. Dark skin: deep berry, warm copper, plum. Apply to apples of cheeks and blend upward toward temples.", _source:'builtin' },
+  { topic:"perfume fragrance", content:"To make fragrance last: apply to pulse points on moisturized skin. Layer with matching body lotion. Don't rub wrists — it breaks down top notes. Store in cool, dark places away from humidity.", _source:'builtin' },
+  { topic:"concealer", content:"Use concealer one shade lighter than foundation under eyes. For blemishes, match to skin tone exactly. Banana setting powder sets under-eye concealer and prevents creasing.", _source:'builtin' },
+  { topic:"contour highlight", content:"Contour with a shade 2–3 deeper along hollows of cheeks, temples, jawline, and nose sides. Highlight on cheekbones, brow bone, and Cupid's bow. Blend thoroughly.", _source:'builtin' },
 ];
 
-/* Dynamic KB from Firebase */
-let dynamicKB = [];
+/* ════════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════════ */
+let dynamicKB    = [];   // All entries fetched from Firestore (all collections merged)
+let _kbFilterCat = 'all'; // Active KB panel filter
 
-/* ===== RAG ===== */
+/* ════════════════════════════════════════════════════
+   NLP STOP-WORDS + TOKENISER
+════════════════════════════════════════════════════ */
+const STOP = new Set(['the','a','an','is','are','was','for','of','and','or','in','on','to','do','i','my','how','what','best','good','great','can','me','any','some','give','tell','about','with','this','that','it','at','be','use']);
+
+function tokenise(text) {
+  return (text || '').toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !STOP.has(w));
+}
+
+function tokenScore(qTokens, candidate) {
+  if (!candidate) return 0;
+  const cTokens = new Set(tokenise(candidate));
+  let score = 0;
+  for (const t of qTokens) {
+    if (cTokens.has(t)) score += 1;
+    else for (const c of cTokens) {
+      if (c.includes(t) || t.includes(c)) { score += 0.5; break; }
+    }
+  }
+  return score;
+}
+
+/* ════════════════════════════════════════════════════
+   RAG — retrieves relevant entries from BOTH built-in
+   AND all Firestore collections, returns injected context
+════════════════════════════════════════════════════ */
 function retrieveContext(userQuery) {
-  const q = userQuery.toLowerCase();
-  const allKB = [
+  const qLower  = userQuery.toLowerCase();
+  const qTokens = tokenise(userQuery);
+
+  // Merge built-in + dynamic (Firestore) for retrieval
+  const allEntries = [
     ...BUILTIN_KB,
-    ...dynamicKB.map(k => ({ topic: k.topic.toLowerCase(), content: `${k.question} — ${k.answer}` }))
+    ...dynamicKB.map(k => ({
+      topic:    (k.topic    || k.name  || k.title || '').toLowerCase(),
+      content:  `${k.question || k.name || ''} — ${k.answer || k.description || k.content || ''}`,
+      aliases:  (k.aliases  || '').toLowerCase(),
+      _source:  k._collection || 'firestore',
+      _id:      k.id
+    }))
   ];
-  const hits = allKB.filter(k =>
-    q.includes(k.topic) ||
-    k.topic.split(' ').some(w => w.length > 3 && q.includes(w)) ||
-    k.content.toLowerCase().split(' ').some(w => w.length > 5 && q.includes(w))
+
+  const scored = allEntries.map(e => {
+    // Exact / substring boost — guarantees retrieval if topic mentioned
+    let boost = 0;
+    const topicWords = (e.topic || '').split(/[\s,\-]+/).filter(w => w.length > 1);
+    for (const tw of topicWords) {
+      if (qLower.includes(tw)) { boost = 10; break; }
+    }
+    if (!boost && e.aliases) {
+      const aliasWords = e.aliases.split(/[\s,]+/).filter(w => w.length > 1);
+      for (const aw of aliasWords) {
+        if (qLower.includes(aw)) { boost = 8; break; }
+      }
+    }
+
+    const topicScore   = tokenScore(qTokens, e.topic)   * 3;
+    const contentScore = tokenScore(qTokens, e.content)  * 1;
+    const aliasScore   = tokenScore(qTokens, e.aliases)  * 2;
+
+    return { ...e, score: boost + topicScore + contentScore + aliasScore };
+  })
+  .filter(e => e.score > 0.5)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 5);
+
+  if (!scored.length) return { context: '', sources: [] };
+
+  console.log('[RAG] hits:', scored.map(h => `${h.topic}(${h.score.toFixed(1)})[${h._source}]`));
+
+  const context = 'Relevant verified beauty knowledge (use this information exactly — do not contradict it):\n'
+    + scored.map(h => `- ${h.content}`).join('\n');
+
+  return { context, sources: scored };
+}
+
+/* ════════════════════════════════════════════════════
+   FIRESTORE — LOAD ALL KB COLLECTIONS IN PARALLEL
+   Reads every collection listed in ALL_KB_COLLECTIONS.
+   Only documents that have a topic/name AND answer/
+   description are included (avoids orphaned docs).
+════════════════════════════════════════════════════ */
+async function loadKBFromFirebase() {
+  if (!window.__fbReady) return;
+  try {
+    const allEntries = [];
+    const snaps = await Promise.all(
+      ALL_KB_COLLECTIONS.map(collName =>
+        window.__getDocs(window.__collection(window.__db, collName))
+          .then(snap => ({ collName, snap }))
+          .catch(err => {
+            console.warn(`[KB] Cannot read "${collName}":`, err.message);
+            return null;
+          })
+      )
+    );
+
+    for (const result of snaps) {
+      if (!result) continue;
+      const { collName, snap } = result;
+      snap.forEach(d => {
+        const data = d.data();
+        // Accept docs that have meaningful beauty content
+        const hasTopic   = data.topic || data.name || data.title;
+        const hasContent = data.answer || data.description || data.content || data.question;
+        if (hasTopic && hasContent) {
+          allEntries.push({ id: d.id, _collection: collName, ...data });
+        }
+      });
+    }
+
+    // Newest first (client-side sort, no Firestore index needed)
+    allEntries.sort((a, b) => {
+      const at = a.timestamp?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+      const bt = b.timestamp?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+      return bt - at;
+    });
+
+    dynamicKB = allEntries;
+    console.log(`[KB] Loaded ${dynamicKB.length} entries from:`, ALL_KB_COLLECTIONS.join(', '));
+    renderKBPanel();
+    refreshCustomChips();
+  } catch(e) {
+    console.warn('[KB] Load error:', e);
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   SAVE KB ENTRY → CORRECT CATEGORY COLLECTION
+════════════════════════════════════════════════════ */
+async function saveKBEntry(entry) {
+  if (!window.__fbReady) throw new Error("Firebase not ready");
+
+  // Route to the Firestore collection matching the category
+  const targetCollection = CATEGORY_COLLECTIONS[entry.category] || 'knowledgeBase';
+
+  const docData = {
+    topic:      entry.topic,
+    question:   entry.question,
+    answer:     entry.answer,
+    aliases:    entry.aliases || '',
+    category:   entry.category,
+    isShared:   true,                  // Explicit shared flag — visible to all users
+    addedBy:    'user',
+    timestamp:  window.__serverTimestamp()
+  };
+
+  const ref = await window.__addDoc(
+    window.__collection(window.__db, targetCollection),
+    docData
   );
-  if (!hits.length) return "";
-  return "Relevant beauty knowledge:\n" + hits.map(h => `- ${h.content}`).join("\n");
+  console.log(`[KB] Saved "${entry.topic}" → collection "${targetCollection}" id:${ref.id}`);
+  return { id: ref.id, collection: targetCollection };
 }
 
-/* ===== CONVERSATION ===== */
-let messages = [{
-  role: "system",
-  content: `You are Glam AI, an expert beauty and cosmetics advisor. You have deep knowledge of skincare, makeup, haircare, fragrance, and beauty trends. You are warm, encouraging, and knowledgeable — like a friend who is also a professional makeup artist and esthetician.
-
-Guidelines:
-- Recommend specific products with brand names when relevant.
-- Tailor advice to the user's skin type, tone, or concern when mentioned.
-- Explain "why" behind beauty tips — educate, don't just list.
-- Be inclusive: address all skin tones, types, genders, and budgets.
-- Use beauty terminology naturally.
-- Keep responses concise but rich. Use bullet points for steps or lists.
-- If a question is unrelated to beauty/cosmetics, politely redirect to beauty topics.`
-}];
-
-/* ===== UI ===== */
-const chatEl  = document.getElementById("chat");
-const inputEl = document.getElementById("userInput");
-const sendBtn = document.getElementById("sendBtn");
-const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-function formatMarkdown(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
-    .replace(/^## (.+)$/gm, '<strong>$1</strong>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<)(.+)$/gm, '<p>$1</p>')
-    .replace(/<p><\/p>/g, '')
-    .replace(/<p>(<ul>)/g, '$1')
-    .replace(/(<\/ul>)<\/p>/g, '$1');
+/* ════════════════════════════════════════════════════
+   DELETE KB ENTRY — from its source collection
+════════════════════════════════════════════════════ */
+async function deleteKBEntry(id, collName) {
+  try {
+    const targetColl = collName || 'knowledgeBase';
+    await window.__deleteDoc(window.__doc(window.__db, targetColl, id));
+    dynamicKB = dynamicKB.filter(k => k.id !== id);
+    renderKBPanel();
+    refreshCustomChips();
+    showToast(`Entry deleted from "${targetColl}"`);
+  } catch(e) { showToast("Delete failed: " + e.message, "error"); }
 }
 
-function appendMsg(role, html, time) {
-  const div = document.createElement('div');
-  div.className = `msg ${role}`;
-  const avatar = role === 'bot' ? '💄' : '🌸';
-  div.innerHTML = `<div class="avatar">${avatar}</div><div><div class="bubble">${html}</div><div class="ts">${time}</div></div>`;
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
+/* ════════════════════════════════════════════════════
+   KB PANEL — RENDER + FILTER
+════════════════════════════════════════════════════ */
+const catEmoji = { makeup:'💄', skincare:'🧴', haircare:'💇', fragrance:'🌸', tools:'🖌️', nails:'💅', general:'✨' };
+
+// Reverse-map collection → category for display
+const collToCat = {};
+for (const [cat, coll] of Object.entries(CATEGORY_COLLECTIONS)) {
+  if (!collToCat[coll]) collToCat[coll] = cat; // First match wins
 }
 
-function showTyping() {
-  const div = document.createElement('div');
-  div.className = 'msg bot typing'; div.id = 'typing';
-  div.innerHTML = `<div class="avatar">💄</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  chatEl.appendChild(div); chatEl.scrollTop = chatEl.scrollHeight;
-}
-function hideTyping() { const t = document.getElementById('typing'); if(t) t.remove(); }
-
-/* ===== TOAST ===== */
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.innerHTML = (type === 'success' ? '✅ ' : '❌ ') + msg;
-  t.className = `show ${type}`;
-  setTimeout(() => { t.className = ''; }, 3500);
+function filterKB(cat) {
+  _kbFilterCat = cat;
+  document.querySelectorAll('.kb-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  renderKBPanel();
 }
 
-/* ===== FIREBASE HELPERS ===== */
+function renderKBPanel() {
+  const list = document.getElementById('kbList');
+
+  let entries = dynamicKB;
+  if (_kbFilterCat !== 'all') {
+    const targetColl = CATEGORY_COLLECTIONS[_kbFilterCat];
+    entries = dynamicKB.filter(k => {
+      const kcat = k.category || collToCat[k._collection] || 'general';
+      return kcat === _kbFilterCat || k._collection === targetColl;
+    });
+  }
+
+  if (!entries.length) {
+    list.innerHTML = `<p class="kb-empty">No entries${_kbFilterCat !== 'all' ? ' in this category' : ''} yet.<br>Tap <strong>＋</strong> to add your first one!</p>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  entries.forEach(k => {
+    const cat   = k.category || collToCat[k._collection] || 'general';
+    const coll  = k._collection || CATEGORY_COLLECTIONS[cat] || 'knowledgeBase';
+    const topic = k.topic || k.name || k.title || '—';
+    const qText = k.question || k.name || '';
+    const aText = k.answer   || k.description || k.content || '';
+    const collSafe = escAttr(coll);
+    const idSafe   = escAttr(k.id);
+
+    const div = document.createElement('div');
+    div.className = 'kb-item';
+    div.innerHTML = `
+      <div class="kb-item-topic">${escHtml(topic)}</div>
+      ${qText ? `<div class="kb-item-q">❓ ${escHtml(qText)}</div>` : ''}
+      <div class="kb-item-a">💬 ${escHtml(aText.substring(0,110))}${aText.length>110?'…':''}</div>
+      <span class="kb-item-badge">${catEmoji[cat]||'✨'} ${cat}</span>
+      <span class="kb-item-coll">📂 ${escHtml(coll)}</span>
+      <button class="kb-item-del" onclick="deleteKBEntry('${idSafe}','${collSafe}')" title="Delete this entry">🗑</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function refreshCustomChips() {
+  document.querySelectorAll('.chip.custom').forEach(c => c.remove());
+  const bar = dynamicKB.slice(0, 6);
+  bar.forEach(k => {
+    const chipBar = document.getElementById('chipsBar');
+    const chip = document.createElement('span');
+    chip.className = 'chip custom';
+    const question = k.question || k.name || k.topic || '';
+    const label = question.length > 38 ? question.substring(0, 36) + '…' : question;
+    chip.textContent = label;
+    chip.title = question;
+    chip.onclick = function() { quickSend(this); };
+    chipBar.appendChild(chip);
+  });
+}
+
+/* ════════════════════════════════════════════════════
+   COLLECTION PREVIEW in modal
+════════════════════════════════════════════════════ */
+function updateCollPreview() {
+  const cat  = document.getElementById('kbCategory').value;
+  const coll = CATEGORY_COLLECTIONS[cat] || 'knowledgeBase';
+  document.getElementById('collPreviewName').textContent = coll;
+}
+
+/* ════════════════════════════════════════════════════
+   CHAT HISTORY
+════════════════════════════════════════════════════ */
 async function saveChat(role, text) {
   try {
     if (!window.__fbReady) return;
@@ -628,49 +857,19 @@ async function saveChat(role, text) {
   } catch(e) { console.warn("Chat save error:", e); }
 }
 
-async function saveKBEntry(entry) {
-  if (!window.__fbReady) throw new Error("Firebase not ready");
-  const ref = await window.__addDoc(window.__collection(window.__db, "knowledgeBase"), {
-    ...entry, timestamp: window.__serverTimestamp()
-  });
-  return ref.id;
-}
-
-async function loadKBFromFirebase() {
-  if (!window.__fbReady) return;
-  try {
-    const q = window.__query(
-      window.__collection(window.__db, "knowledgeBase"),
-      window.__orderBy("timestamp", "desc")
-    );
-    const snap = await window.__getDocs(q);
-    dynamicKB = [];
-    snap.forEach(d => dynamicKB.push({ id: d.id, ...d.data() }));
-    renderKBPanel();
-    refreshCustomChips();
-  } catch(e) { console.warn("KB load error:", e); }
-}
-
-async function deleteKBEntry(id) {
-  try {
-    await window.__deleteDoc(window.__doc(window.__db, "knowledgeBase", id));
-    dynamicKB = dynamicKB.filter(k => k.id !== id);
-    renderKBPanel();
-    refreshCustomChips();
-    showToast("Entry deleted from Firebase");
-  } catch(e) { showToast("Delete failed: " + e.message, "error"); }
-}
-
 async function loadHistory() {
   if (!window.__fbReady) { setTimeout(loadHistory, 800); return; }
   try {
-    const q = window.__query(window.__collection(window.__db, "conversations"), window.__orderBy("timestamp","desc"));
+    const q = window.__query(
+      window.__collection(window.__db, "conversations"),
+      window.__orderBy("timestamp", "desc")
+    );
     const snap = await window.__getDocs(q);
     const list = document.getElementById('historyList');
     if (snap.empty) return;
     list.innerHTML = '';
-    snap.forEach(doc => {
-      const d = doc.data();
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
       const item = document.createElement('div');
       item.className = 'history-item';
       const label = d.role === 'user' ? '🌸 You' : '💄 Glam AI';
@@ -681,50 +880,105 @@ async function loadHistory() {
   } catch(e) { console.warn("History load error:", e); }
 }
 
+/* ════════════════════════════════════════════════════
+   FIREBASE READY
+════════════════════════════════════════════════════ */
 window.addEventListener("firebase-ready", () => {
-  setTimeout(loadHistory, 500);
+  setTimeout(loadHistory,        500);
   setTimeout(loadKBFromFirebase, 600);
 });
 
-/* ===== KB PANEL ===== */
-const catEmoji = { makeup:'💄', skincare:'🧴', haircare:'💇', fragrance:'🌸', tools:'🖌️', nails:'💅', general:'✨' };
+/* ════════════════════════════════════════════════════
+   CONVERSATION STATE
+════════════════════════════════════════════════════ */
+let messages = [{
+  role: "system",
+  content: `You are Glam AI, an expert beauty and cosmetics advisor. You have deep knowledge of skincare, makeup, haircare, fragrance, and beauty trends. You are warm, encouraging, and knowledgeable.
 
-function renderKBPanel() {
-  const list = document.getElementById('kbList');
-  if (!dynamicKB.length) {
-    list.innerHTML = '<p class="kb-empty">No custom entries yet.<br>Tap <strong>＋</strong> to add your first one!</p>';
-    return;
+CRITICAL RULES:
+1. If "Relevant verified beauty knowledge" is provided below, you MUST use it — it takes priority over everything else you know.
+2. NEVER contradict information from the verified knowledge section.
+3. Recommend specific products with brand names when relevant.
+4. Tailor advice to skin type, tone, or concern when mentioned.
+5. Explain "why" behind beauty tips — educate, don't just list.
+6. Be inclusive: address all skin tones, types, genders, and budgets.
+7. Keep responses concise but rich. Use bullet points for steps.
+8. If a question is unrelated to beauty, politely redirect.`
+}];
+
+/* ════════════════════════════════════════════════════
+   UI HELPERS
+════════════════════════════════════════════════════ */
+const chatEl  = document.getElementById("chat");
+const inputEl = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const now     = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) {
+  return (str||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+function formatMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<strong>$1</strong>')
+    .replace(/^## (.+)$/gm,  '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm,   '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<)(.+)$/gm, '<p>$1</p>')
+    .replace(/<p><\/p>/g, '')
+    .replace(/<p>(<ul>)/g, '$1')
+    .replace(/(<\/ul>)<\/p>/g, '$1');
+}
+
+function appendMsg(role, html, time, sources) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatar = role === 'bot' ? '💄' : '🌸';
+  let extra = '';
+  if (sources && sources.length > 0) {
+    const collsUsed = [...new Set(sources.map(s => s._source).filter(s => s !== 'builtin'))];
+    if (collsUsed.length > 0) {
+      extra = `<div><span class="rag-badge">✓ Verified data · ${collsUsed.join(', ')}</span></div>`;
+    }
   }
-  list.innerHTML = '';
-  dynamicKB.forEach(k => {
-    const div = document.createElement('div');
-    div.className = 'kb-item';
-    div.innerHTML = `
-      <div class="kb-item-topic">${k.topic}</div>
-      <div class="kb-item-q">❓ ${k.question}</div>
-      <div class="kb-item-a">💬 ${k.answer.substring(0,110)}${k.answer.length>110?'…':''}</div>
-      <span class="kb-item-badge">${catEmoji[k.category]||'✨'} ${k.category}</span>
-      <button class="kb-item-del" onclick="deleteKBEntry('${k.id}')" title="Delete this entry">🗑</button>
-    `;
-    list.appendChild(div);
-  });
+  div.innerHTML = `<div class="avatar">${avatar}</div><div><div class="bubble">${html}${extra}</div><div class="ts">${time}</div></div>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-function refreshCustomChips() {
-  document.querySelectorAll('.chip.custom').forEach(c => c.remove());
-  dynamicKB.slice(0, 6).forEach(k => {
-    const bar = document.getElementById('chipsBar');
-    const chip = document.createElement('span');
-    chip.className = 'chip custom';
-    const label = k.question.length > 38 ? k.question.substring(0,36)+'…' : k.question;
-    chip.textContent = label;
-    chip.title = k.question;
-    chip.onclick = function() { quickSend(this); };
-    bar.appendChild(chip);
-  });
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg bot typing'; div.id = 'typing';
+  div.innerHTML = `<div class="avatar">💄</div><div class="bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function hideTyping() { const t = document.getElementById('typing'); if(t) t.remove(); }
+
+/* ════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════ */
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.innerHTML = (type === 'success' ? '✅ ' : '❌ ') + msg;
+  t.className = `show ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 3500);
 }
 
-/* ===== SEND — calls /api/chat proxy (no key in frontend) ===== */
+/* ════════════════════════════════════════════════════
+   SEND MESSAGE
+   1. Reloads all KB collections fresh from Firestore
+   2. Runs NLP+RAG to find matching entries
+   3. Injects verified context into system prompt
+   4. Calls LLM API
+════════════════════════════════════════════════════ */
 async function send(text) {
   if (!text.trim()) return;
   inputEl.value = ''; inputEl.style.height = '';
@@ -733,24 +987,40 @@ async function send(text) {
   appendMsg('user', formatMarkdown(text), now());
   await saveChat('user', text);
 
-  const ctx = retrieveContext(text);
-  const augmented = ctx ? `${ctx}\n\nUser question: ${text}` : text;
-  messages.push({ role: "user", content: augmented });
+  // Always reload KB fresh so new entries are immediately available
+  await loadKBFromFirebase();
+
+  // NLP+RAG retrieval
+  const { context, sources } = retrieveContext(text);
+
+  // Build augmented user message
+  const augmented = context
+    ? `${context}\n\nUser question: ${text}`
+    : text;
+
+  // Build messages with fresh system (includes RAG context)
+  const systemContent = messages[0].content;
+  const msgsToSend = [
+    { role: 'system', content: systemContent },
+    ...messages.slice(1),
+    { role: 'user', content: augmented }
+  ];
+  messages.push({ role: 'user', content: augmented });
+
   showTyping();
 
   try {
-    /* Key lives in Vercel env — never exposed to the browser */
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: GROQ_MODEL, messages, temperature: 0.75, max_tokens: 900 })
+      body: JSON.stringify({ model: GROQ_MODEL, messages: msgsToSend, temperature: 0.72, max_tokens: 900 })
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();
     const reply = data.choices?.[0]?.message?.content?.trim() || "I couldn't fetch a response. Please try again!";
     messages.push({ role: "assistant", content: reply });
     hideTyping();
-    appendMsg('bot', formatMarkdown(reply), now());
+    appendMsg('bot', formatMarkdown(reply), now(), sources);
     await saveChat('assistant', reply);
   } catch(err) {
     hideTyping();
@@ -761,15 +1031,23 @@ async function send(text) {
 }
 
 sendBtn.onclick = () => send(inputEl.value);
-inputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(inputEl.value); } });
-inputEl.addEventListener('input', () => { inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,130)+'px'; });
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(inputEl.value); }
+});
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 130) + 'px';
+});
 function quickSend(el) { send(el.title || el.textContent.trim()); }
 
-/* ===== MODAL ===== */
-const modal = document.getElementById('kbModal');
+/* ════════════════════════════════════════════════════
+   MODAL
+════════════════════════════════════════════════════ */
+const modal        = document.getElementById('kbModal');
 const modalOverlay = document.getElementById('modalOverlay');
 
 function openModal() {
+  updateCollPreview();
   modal.classList.add('open');
   modalOverlay.classList.add('show');
   setTimeout(() => document.getElementById('kbTopic').focus(), 150);
@@ -777,11 +1055,15 @@ function openModal() {
 function closeModal() {
   modal.classList.remove('open');
   modalOverlay.classList.remove('show');
-  ['kbTopic','kbQuestion','kbAnswer'].forEach(id => document.getElementById(id).value = '');
+  ['kbTopic','kbQuestion','kbAnswer','kbAliases'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('kbCategory').value = 'makeup';
+  updateCollPreview();
 }
 
-document.getElementById('addKbBtn').onclick = openModal;
+document.getElementById('addKbBtn').onclick  = openModal;
 document.getElementById('closeModal').onclick = closeModal;
 document.getElementById('cancelModal').onclick = closeModal;
 modalOverlay.onclick = closeModal;
@@ -790,6 +1072,7 @@ document.getElementById('saveKbBtn').onclick = async () => {
   const topic    = document.getElementById('kbTopic').value.trim();
   const question = document.getElementById('kbQuestion').value.trim();
   const answer   = document.getElementById('kbAnswer').value.trim();
+  const aliases  = document.getElementById('kbAliases').value.trim();
   const category = document.getElementById('kbCategory').value;
 
   if (!topic)    { showToast("Please enter a topic keyword", "error"); return; }
@@ -797,34 +1080,46 @@ document.getElementById('saveKbBtn').onclick = async () => {
   if (!answer)   { showToast("Please enter the knowledge/answer", "error"); return; }
 
   const btn = document.getElementById('saveKbBtn');
-  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Saving to Firebase…';
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Saving…';
 
   try {
-    const id = await saveKBEntry({ topic, question, answer, category });
-    dynamicKB.unshift({ id, topic, question, answer, category });
+    const { id, collection: savedColl } = await saveKBEntry({ topic, question, answer, aliases, category });
+    // Update local cache immediately — no need to wait for next reload
+    dynamicKB.unshift({
+      id, _collection: savedColl,
+      topic, question, answer, aliases, category, isShared: true,
+      timestamp: { toMillis: () => Date.now() }
+    });
     renderKBPanel();
     refreshCustomChips();
     closeModal();
-    showToast(`"${topic}" added! Glam AI now knows this 🎉`);
+    showToast(`"${topic}" saved to "${savedColl}"! Glam AI knows this now 🎉`);
   } catch(e) {
     showToast("Save failed: " + e.message, "error");
   }
   btn.disabled = false; btn.innerHTML = '<span>💾</span> Save to Firebase';
 };
 
-/* ===== HISTORY PANEL ===== */
+/* ════════════════════════════════════════════════════
+   PANELS
+════════════════════════════════════════════════════ */
 const histPanel = document.getElementById('historyPanel');
 const overlay   = document.getElementById('overlay');
+const kbPanel   = document.getElementById('kbPanel');
 
-document.getElementById('historyBtn').onclick = () => { histPanel.classList.add('open'); overlay.classList.add('show'); loadHistory(); };
+document.getElementById('historyBtn').onclick = () => {
+  histPanel.classList.add('open'); overlay.classList.add('show'); loadHistory();
+};
 function closeHistory() { histPanel.classList.remove('open'); overlay.classList.remove('show'); }
 document.getElementById('closeHistory').onclick = closeHistory;
-overlay.onclick = () => { closeHistory(); document.getElementById('kbPanel').classList.remove('open'); };
+overlay.onclick = () => { closeHistory(); kbPanel.classList.remove('open'); };
 
-/* ===== KB PANEL ===== */
-const kbPanel = document.getElementById('kbPanel');
-document.getElementById('kbViewBtn').onclick = () => { kbPanel.classList.add('open'); overlay.classList.add('show'); loadKBFromFirebase(); };
-document.getElementById('closeKb').onclick   = () => { kbPanel.classList.remove('open'); overlay.classList.remove('show'); };
+document.getElementById('kbViewBtn').onclick = () => {
+  kbPanel.classList.add('open'); overlay.classList.add('show'); loadKBFromFirebase();
+};
+document.getElementById('closeKb').onclick = () => {
+  kbPanel.classList.remove('open'); overlay.classList.remove('show');
+};
 </script>
 </body>
 </html>
